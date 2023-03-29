@@ -33,7 +33,7 @@ Buffers are controlled in config.py.
 """
 
 from util.data import put_rows
-from util.dv_api import report_delete, report_filter, report_build, report_file, report_to_rows, report_clean
+from util.dv_api import report_delete, report_filter, report_build, report_file, report_to_rows, report_clean, report_run
 
 
 def dv_report(config, task):
@@ -52,6 +52,20 @@ def dv_report(config, task):
       config, task['auth'],
       task['report'].get('report_id', None),
       task['report'].get('name', None)
+    )
+
+  # check if report is to be run
+  if task.get('report_run_only', False):
+    # report name can exist in 2 places
+    report_name =  task['report'].get('name') or task['report'].get('body', {}).get('metadata', {}).get('title')
+    if config.verbose:
+      print('DBM REPORT RUN', report_name or  task['report'].get('report_id'))
+
+    report_run(
+      config,
+      task['auth'],
+      task['report'].get('report_id'),
+      report_name
     )
 
   # check if report is to be created

@@ -1,0 +1,81 @@
+{
+    "script": {
+        "released": "2023-03-01",
+        "license": "Licensed under the Apache License, Version 2.0",
+        "copyright": "Copyright 2023 Google LLC",
+        "title": "DV360 Report To BigQuery",
+        "description": "Move existing DV360 reports into a BigQuery table.",
+        "from": [
+            "dv360"
+        ],
+        "to": [
+            "bigquery"
+        ],
+        "instructions": [
+            "Specify either report name or report id to move a report.",
+            "A schema is recommended, if not provided it will be guessed.",
+            "The most recent valid file will be moved to the table.",
+            "The schema provided below is just an example"
+        ]
+    },
+    "tasks": [
+        {
+            "dataset": {
+                "description": "Create a BigQuery dataset.",
+                "auth": "service",
+                "dataset": ""
+            }
+        },
+        {
+            "dv_report": {
+                "description": "Run a DV360 Report",
+                "auth": "service",
+                "report": {
+                    "report_id": "",
+                    "name": ""
+                },
+                "report_run_only": true
+            }
+        },
+        {
+            "dv_report": {
+                "description": "Fetch and download a DV360 Report",
+                "auth": "service",
+                "report": {
+                    "report_id": "",
+                    "name": ""
+                },
+                "out": {
+                    "bigquery": {
+                        "auth": "service",
+                        "dataset": "",
+                        "table": "",
+                        "header": true,
+                        "schema": [
+                            {
+                                "name": "Advertiser_Currency",
+                                "type": "STRING"
+                            },
+                            {
+                                "name": "Advertiser_Id",
+                                "type": "INTEGER"
+                            },
+                            {
+                                "name": "Campaign_Id",
+                                "type": "INTEGER"
+                            },
+                            {
+                                "name": "Billable_Impressions",
+                                "type": "FLOAT"
+                            },
+                            {
+                                "name": "Invalid_Impressions",
+                                "type": "FLOAT"
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    ]
+}

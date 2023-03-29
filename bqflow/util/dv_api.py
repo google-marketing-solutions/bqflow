@@ -224,6 +224,73 @@ def report_fetch(config, auth, report_id=None, name=None, timeout=60):
       return False
 
 
+def report_run(config, auth, report_id=None, name=None):
+  """ Trigger a DBM report to run by name or ID.
+
+  Will do nothing if report is currently in progress.
+
+  Bulletproofing:
+  https://developers.google.com/bid-manager/reference/rest/v2/queries/run
+
+  Args:
+    * auth: (string) Either user or service.
+    * report_id: (int) ID of DCm report to fetch ( either or name ).
+    * name: (string) Name of report to fetch ( either or report_id ).
+
+  Returns:
+    * True if report run is executed
+    * False otherwise
+
+  """
+
+  if config.verbose:
+    print('DBM REPORT RUN INIT', report_id or name)
+  if report_id is None:
+    report = report_get(config, auth, report_id, name)
+    if report is None:
+      raise Exception('Report does not exist:', name)
+    else:
+      report_id = report['id']
+
+  files = list(report_files(config, auth, report_id))
+  latest_file_json = files[0] if len(files) > 0 else None
+  if latest_file_json == None or latest_file_json['metadata']['status']['state'] != 'PROCESSING':
+    # run report if previously never run or currently not running
+    if config.verbose:
+      print('RUNNING REPORT', report_id or name)
+    API_DBM(config, auth).queries().run(
+      queryId=report_id,
+      synchronous=False
+    ).execute()
+    return True
+  if config.verbose:
+    print('REPORT RUN SKIPPED', report_id or name)
+  return False
+
+def report_files(config, auth, report_id):
+  """ Lists all the files available for a given DBM report configuration.
+
+  Bulletproofing:
+  https://developers.google.com/bid-manager/reference/rest/v2/queries.reports
+
+  Args:
+    * auth: (string) Either user or service.
+    * report_id: (int) DCM report identifier.
+
+  Returns:
+    * Iterator of JSONs.
+
+  """
+  for report_file in API_DBM(
+        config,
+        auth,
+        iterate=True
+      ).queries().reports().list(
+        queryId=report_id,
+        orderBy='key.reportId desc'
+      ).execute():
+    yield report_file
+
 def report_file(config, auth,
                 report_id=None,
                 name=None,

@@ -114,7 +114,7 @@ class Deployment:
                     workflow = os.path.join(path, filename)
                     # checking if it is a file
                     if os.path.isfile(workflow):
-                        command = f'python3 starthinker/tool/recipe.py {workflow} -s {service} -p {project} --verbose'
+                        command = f'python3 bqflow/run.py --workflow {workflow} -s {service} -p {project} --verbose'
                         self.execute_command(command)
         print(f'Finished executing workflows in directory {directory}.')
 
@@ -188,9 +188,6 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    # Execution order of functions is important
     # for debugging these are logical units than can be commented on or off
     deployment = Deployment(args.debug)
-    #deployment.execute_command('git clone https://github.com/google/starthinker.git', True)
-    #deployment.execute_command('pip install -r starthinker/starthinker/requirements.txt', True)
     deployment.execute_workflows()
