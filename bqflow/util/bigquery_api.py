@@ -820,8 +820,6 @@ class BigQuery():
     if is_time_partition:
       body['timePartitioning'] = {'type': 'DAY'}
 
-    print('BODY', body)
-
     API_BigQuery(self.config, auth).tables().insert(
       projectId=project_id,
       datasetId=dataset_id,
