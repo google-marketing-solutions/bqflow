@@ -56,7 +56,8 @@ def dataset(config, task):
     BigQuery(config).datasets_create(
         task['auth'],
         config.project,
-        task['dataset']
+        task['dataset'],
+        task.get('expiration_days')
     )
 
     if config.verbose:

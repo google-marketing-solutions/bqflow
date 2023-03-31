@@ -24,9 +24,9 @@ import csv
 import uuid
 import json
 import datetime
+import time
 
 
-from time import sleep
 from io import BytesIO
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaIoBaseUpload
@@ -232,7 +232,7 @@ class BigQuery():
           jobId=self.job['jobReference']['jobId'])
 
       while True:
-        sleep(5)
+        time.sleep(5)
         if self.config.verbose:
           print('.', end='')
         sys.stdout.flush()
@@ -250,19 +250,25 @@ class BigQuery():
           break
 
 
-  def datasets_create(self, auth, project_id, dataset_id):
+  def datasets_create(self, auth, project_id, dataset_id, expiration_days=None):
+
+    body = {
+      'description': dataset_id,
+      'datasetReference': {
+        'projectId': project_id,
+        'datasetId': dataset_id,
+      },
+      'location': 'US',
+      'friendlyName': dataset_id,
+    }
+
+    if expiration_days is not None:
+      body['defaultTableExpirationMs'] = str(int((expiration_days * 24 * 60 * 60) * 1000)) # string in milliseconds
+
     try:
       API_BigQuery(self.config, auth).datasets().insert(
         projectId=project_id,
-        body = {
-          'description': dataset_id,
-          'datasetReference': {
-            'projectId': project_id,
-            'datasetId': dataset_id,
-          },
-          'location': 'US',
-          'friendlyName': dataset_id,
-        }
+        body=body
       ).execute()
       return True
     except HttpError as e:
@@ -787,6 +793,7 @@ class BigQuery():
     table_id,
     schema=None,
     overwrite=True,
+    expiration_days=None,
     is_time_partition=False
   ):
 
@@ -806,6 +813,14 @@ class BigQuery():
 
     if is_time_partition:
       body['timePartitioning'] = {'type': 'DAY'}
+
+    if expiration_days is not None:
+      body['expirationTime'] = str(int((time.time() + (expiration_days * 24 * 60 * 60)) * 1000)) # string in milliseconds
+
+    if is_time_partition:
+      body['timePartitioning'] = {'type': 'DAY'}
+
+    print('BODY', body)
 
     API_BigQuery(self.config, auth).tables().insert(
       projectId=project_id,
@@ -1013,7 +1028,7 @@ class BigQuery():
     response = API_BigQuery(self.config, auth).jobs().query(
         projectId=project_id, body=body).execute()
     while not response['jobComplete']:
-      sleep(5)
+      time.sleep(5)
       response = API_BigQuery(self.config, auth).jobs().getQueryResults(
         projectId=project_id,
         jobId=response['jobReference']['jobId']
