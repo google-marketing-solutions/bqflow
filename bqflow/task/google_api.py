@@ -199,8 +199,6 @@ def google_api_build_results(config, auth, api_call, results):
       expiration_days=results['bigquery'].get('expiration_days')
     )
 
-  print('EXP', results['bigquery'].get('expiration_days'))
-
   return results
 
 
