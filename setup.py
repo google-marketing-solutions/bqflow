@@ -28,10 +28,10 @@ REQUIREMENTS = [
     'google-auth',
     'google-auth-oauthlib',
     'google-auth-httplib2',
-    'google-cloud-bigquery==2.13',
-    'pytz',
-    'tzlocal',
+    'google-cloud-bigquery',
+    'psutil',
     'python-dateutil',
+    'pytz',
 ]
 
 setup(
