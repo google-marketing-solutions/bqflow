@@ -129,7 +129,7 @@ class CredentialsUserWrapper(CredentialsUser):
 
   def load_flow(self):
     flow = CredentialsFlowWrapper(self.client)
-    flow.run_console()
+    flow.run_local_server()
 
     self.from_credentials(flow.credentials)
     self.save()
