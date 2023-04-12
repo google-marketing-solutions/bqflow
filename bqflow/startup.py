@@ -40,8 +40,6 @@ class Deployment:
 
     Typical Usage:
         deployment = Deployment(args.debug)
-        deployment.execute_command('git clone https://github.com/google/starthinker.git', True)
-        deployment.execute_command('pip install -r starthinker/starthinker/requirements.txt', True)
         directories = deployment.get_parent_workflow_directories('workflows')
         deployment.execute_workflows(directories)
     '''

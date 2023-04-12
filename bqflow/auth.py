@@ -36,14 +36,14 @@ def main():
       ----------------------------------------
         A. Visit: https://console.developers.google.com/apis/credentials/consent
         B. Choose Internal if you have GSuite, otherwise choose External.
-        C. For Application Name enter: StarThinker
+        C. For Application Name enter: BQFlow
         D. All other fields are optional, click Save.
 
       Step 2: Create CLIENT Credentials ( do only once )
       ----------------------------------------
         A. Visit: https://console.developers.google.com/apis/credentials/oauthclient
         B. Choose Desktop.
-        C. For Name enter: StarThinker.
+        C. For Name enter: BQFlow.
         D. Click Create and ignore the confirmation pop-up.
 
       Step 3: Download CLIENT Credentials File ( do only once )"
