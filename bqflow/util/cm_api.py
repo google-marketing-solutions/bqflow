@@ -605,6 +605,7 @@ def report_list(config, auth, account):
     'profileId': profile_id
   }
   for report in API_DCM(
+    config,
     auth,
     iterate=True,
     internal=is_superuser
@@ -794,6 +795,11 @@ def report_clean(rows):
     # not first row anymore
     first = False
 
+def profile_list(config, auth):
+	for profile in API_DCM(config,
+                    auth,
+                    iterate=True).userProfiles().list().execute():
+          yield profile
 
 def conversions_upload(config, auth,
                        account,
