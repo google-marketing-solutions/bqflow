@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 ###########################################################################
 #
 #  Copyright 2020 Google LLC
@@ -58,7 +60,10 @@ def main():
         B. The USER file will be created and can be used to access Google APIs.
         C. The user profile will be printed to the screen.
 
-        Example: python helper.py -c [CLIENT file path] -u [USER file path]
+        Example: python bqflow/bqflow/auth.py -c [CLIENT file path] -u [USER file path]
+
+        All scopes are controlled by: bqflow/bqflow/config.py
+
   """))
 
   # initialize project

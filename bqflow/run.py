@@ -182,7 +182,10 @@ def main():
 
   """))
 
-  parser.add_argument('--workflow', help='Path to workflow json file to load.')
+  parser.add_argument(
+    'workflow',
+     help='Path to workflow json file to run.'
+  )
 
   parser.add_argument(
     '--project',

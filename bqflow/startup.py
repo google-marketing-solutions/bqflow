@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 ###########################################################################
 #
@@ -112,7 +112,7 @@ class Deployment:
                     workflow = os.path.join(path, filename)
                     # checking if it is a file
                     if os.path.isfile(workflow):
-                        command = f'python3 bqflow/run.py --workflow {workflow} -s {service} -p {project} --verbose'
+                        command = f'python3 bqflow/run.py {workflow} -s {service} -p {project} --verbose'
                         self.execute_command(command)
         print(f'Finished executing workflows in directory {directory}.')
 
@@ -161,7 +161,8 @@ if __name__ == "__main__":
 
     Directory Structure:
 
-    root = dir, passed as parameter to this script
+    bqflow = dir, cloned from GitHub
+    workflows = dir, passed as parameter to this script
       - workflow_1 = dir, ran as a single sequence
         - service.json = file, optional service definition to run as, if not given uses VM default
         - workflow_a.json = file, the sequence of BQFlow steps to run
@@ -173,8 +174,8 @@ if __name__ == "__main__":
         - workflow_b.json = file, the sequence of BQFlow steps to run
         - ...
 
-    Example:
-      python3 runner.py [directory] --debug
+    If a service.json is NOT provided, the code will attempt to use the DEFAULT VM service credentials.
+
   """))
 
     parser.add_argument(
