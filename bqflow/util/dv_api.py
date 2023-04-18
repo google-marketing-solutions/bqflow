@@ -29,7 +29,6 @@ from util.google_api import API_DBM
 DBM_CHUNKSIZE = misc.memory_scale(maximum=200 * 1024**3, multiple=256 * 1024)
 RE_FILENAME = re.compile(r'.*/(.*)\?GoogleAccess')
 
-
 def report_get(config, auth, report_id=None, name=None):
   """ Returns the DBM JSON definition of a report based on name or ID.
 

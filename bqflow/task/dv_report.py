@@ -15,6 +15,7 @@
 #  limitations under the License.
 #
 ###########################################################################
+
 """Handler that executes { "dbm":{...}} task in recipe JSON.
 
 This script translates JSON instructions into operations on DBM reporting.
