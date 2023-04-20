@@ -125,7 +125,7 @@ when handling credentials.
 
 **Why Restful APIS?**
   1. Well [documented endpoints](https://developers.google.com/apis-explorer) for each product.
-  1. Consitent and universal [across all products](https://developers.google.com/discovery/v1/reference/apis), no client library differences.
+  1. Consistent and universal [across all products](https://developers.google.com/discovery/v1/reference/apis), no client library differences.
   1. Less to maintain, yes BQFlow only has 1 connector for ALL GOOGLE APIs.
 
 **Is it only Google APIs?**

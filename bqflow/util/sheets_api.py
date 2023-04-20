@@ -23,8 +23,7 @@ import re
 from googleapiclient.errors import HttpError
 
 from util.google_api import API_Sheets
-from util.drive import file_delete
-from util.drive import file_find
+from util.drive import Drive
 
 
 def sheets_id(config, auth, url_or_name):
@@ -49,7 +48,7 @@ def sheets_id(config, auth, url_or_name):
 
   # check if name given convert to ID "Some Document"
   else:
-    sheet = file_find(config, auth, url_or_name)
+    sheet = Drive(config, auth).file_find(url_or_name)
     if sheet:
       return sheet['id']
 
@@ -388,7 +387,7 @@ def sheets_tab_delete(config, auth, sheet_url_or_name, sheet_tab):
     if len(
         spreadsheet['sheets']
     ) == 1 and spreadsheet['sheets'][0]['properties']['title'] == sheet_tab:
-      file_delete(config, auth, spreadsheet['properties']['title'], parent=None)
+      Drive(config, auth).file_delete(spreadsheet['properties']['title'], parent=None)
     else:
       sheet_id, tab_id = sheets_tab_id(config, auth, sheet_url_or_name, sheet_tab)
       # add check to see if only tab, then delete whole sheet
