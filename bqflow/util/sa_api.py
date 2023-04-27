@@ -138,6 +138,11 @@ class SA_Report():
         body['timeRange'] = { 'startDate':self.config.date - timedelta(days=364), 'endDate':self.config.date }
       elif body['relativeTimeRange'] == 'LAST_24_MONTHS':
         body['timeRange'] = { 'startDate':self.config.date - timedelta(days=729), 'endDate':self.config.date }
+      elif body['relativeTimeRange'] == 'PREVIOUS_MONTH':
+        previous_month_1st_day = (self.config.date - timedelta(days=self.config.date.day)).replace(day=1)
+        first_day_current_month = self.config.date.replace(day=1)
+        previous_month_last_day = first_day_current_month - timedelta(days=1)
+        body['timeRange'] = { 'startDate':previous_month_1st_day, 'endDate':previous_month_last_day }
 
       del body['relativeTimeRange']
 

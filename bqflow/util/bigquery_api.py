@@ -476,7 +476,7 @@ class BigQuery():
     if wait:
       self.job_wait(auth)
     else:
-      return job
+      return self.job
 
 
   def rows_to_table(
@@ -689,7 +689,7 @@ class BigQuery():
     elif disposition == 'WRITE_TRUNCATE':
       if self.config.verbose:
         print('BIGQUERY: No data, clearing table.')
-      table_create(self.config, auth, project_id, dataset_id, table_id, schema)
+      self.table_create(self.config, auth, project_id, dataset_id, table_id, schema)
 
 
   def incremental_rows_to_table(
@@ -710,7 +710,7 @@ class BigQuery():
 
     #load the data in rows to BQ into a temp table
     table_id_temp = table_id + str(uuid.uuid4()).replace('-', '_')
-    rows_to_table(
+    self.rows_to_table(
       self.config,
       auth,
       project_id,
@@ -724,13 +724,13 @@ class BigQuery():
 
     try:
       #query the temp table to find the max and min date
-      start_date = _get_min_date_from_table(
+      start_date = self._get_min_date_from_table(
         self.config, auth,
         project_id,
         dataset_id,
         table_id_temp
       )
-      end_date = _get_max_date_from_table(
+      end_date = self._get_max_date_from_table(
         self.config, auth,
         project_id,
         dataset_id,
@@ -738,10 +738,10 @@ class BigQuery():
       )
 
       #check if master table exists: if not create it, if so clear old data
-      if not table_exists(self.config, auth, project_id, dataset_id, table_id):
-        table_create(config, auth, project_id, dataset_id, table_id)
+      if not self.table_exists(self.config, auth, project_id, dataset_id, table_id):
+        self.table_create(self.config, auth, project_id, dataset_id, table_id)
       else:
-        _clear_data_in_date_range_from_table(
+        self._clear_data_in_date_range_from_table(
           self.config, auth,
           project_id,
           dataset_id,
@@ -754,7 +754,7 @@ class BigQuery():
       #append temp table to master
       query = ('SELECT * FROM `' + project_id + '.' + dataset_id + '.' +
                table_id_temp + '` ')
-      query_to_table(
+      self.query_to_table(
         self.config, auth,
         project_id,
         dataset_id,
@@ -766,7 +766,7 @@ class BigQuery():
       )
 
       #delete temp table
-      drop_table(
+      self.drop_table(
         self.config, auth,
         project_id,
         dataset_id,
@@ -776,7 +776,7 @@ class BigQuery():
 
     except:
       #delete temp table
-      drop_table(
+      self.drop_table(
         self.config, auth,
         project_id,
         dataset_id,
@@ -798,7 +798,7 @@ class BigQuery():
   ):
 
     if overwrite:
-      table_delete(self.config, auth, project_id, dataset_id, table_id)
+      self.table_delete(self.config, auth, project_id, dataset_id, table_id)
 
     body = {
       'tableReference': {
@@ -861,7 +861,7 @@ class BigQuery():
 
   def table_exists(self, auth, project_id, dataset_id, table_id):
     try:
-      table_get(self.config, auth, project_id, dataset_id, table_id)
+      self.table_get(self.config, auth, project_id, dataset_id, table_id)
       return True
     except HttpError as e:
       if e.resp.status != 404:
@@ -958,7 +958,7 @@ class BigQuery():
         )
 
     else:
-      yield from query_to_rows(
+      yield from self.query_to_rows(
         self.config,
         auth,
         project_id,
@@ -1059,7 +1059,7 @@ class BigQuery():
 
   def query_to_schema(self, auth, project_id, dataset_id, query, legacy=True):
 
-    if config.verbose:
+    if self.config.verbose:
       print('BIGQUERY QUERY SCHEMA:', project_id, dataset_id)
 
     body = {
@@ -1136,7 +1136,7 @@ class BigQuery():
 
     self.job_wait(auth)
 
-    return job['rows'][0]['f'][0]['v']
+    return self.job['rows'][0]['f'][0]['v']
 
 
   #start and end date must be in format YYYY-MM-DD
@@ -1169,4 +1169,4 @@ class BigQuery():
     ).execute()
 
     self.job_wait(auth)
-    return job['rows'][0]['f'][0]['v']
+    return self.job['rows'][0]['f'][0]['v']
