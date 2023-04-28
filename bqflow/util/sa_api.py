@@ -69,7 +69,7 @@ class SA_Report():
     self.config = config
     self.auth = auth
     self.columns = SA_FIELDS
-    self.reportId = None
+    self.reportIds = []
 
 
   def column_type(self, agencyId:int, advertiserId:int, column:str) -> str:
@@ -108,6 +108,7 @@ class SA_Report():
 
     '''
 
+    # add ability to use lookback windows
     if 'relativeTimeRange' in body:
       # Not implemented:
       # WEEK_TO_DATE
@@ -140,19 +141,29 @@ class SA_Report():
 
       del body['relativeTimeRange']
 
+    # add ability to run multiple accounts for the same report
+    if 'reportScopes' in body:
+      scopes = body['reportScopes']
+      del body['reportScopes']
 
-    self.reportId = API_SearchAds(self.config, self.auth).reports().request(body=body).execute()['id']
-    return self.reportId
+      for scope in scopes:
+        body['reportScope'] = scope
+        self.reportIds.append(API_SearchAds(self.config, self.auth).reports().request(body=body).execute()['id'])
+
+    else:
+      self.reportIds.append(API_SearchAds(self.config, self.auth).reports().request(body=body).execute()['id'])
+
+    return self.reportIds
 
 
-  def get_rows(self, reportId:int=None, timeout:int=60*3) -> typing.Iterator[dict]:
+  def get_rows(self, reportIds:list=None, timeout:int=60*3) -> typing.Iterator[dict]:
     '''Return each row of data from a report as a generator.
 
     Wait up to 3 hours with 1 minute poll intervals for report to finish.
     Handle fragmented downloads.
 
     Args:
-     reportId - optional,  if not given uses prior value from request(...) call.
+     reportIds - optional, if not given uses prior values from request(...) call.
      timeout - optional, number of minutes to wait for report to complete.
 
     Returns:
@@ -160,21 +171,21 @@ class SA_Report():
 
     '''
 
-    if reportId is None: reportId = self.reportId
+    for reportId in (reportIds or self.reportIds):
 
-    while (timeout > 0):
-      report = API_SearchAds(self.config, self.auth).reports().get(reportId=reportId).execute()
-      if report['isReportReady']:
-        for fragment in range(len(report['files'])):
-          rows = csv_to_rows(API_SearchAds(self.config, self.auth).reports().getFile(reportId=reportId, reportFragment=fragment).execute())
-          if fragment > 0: next(rows) # skip header in all subsequent fragments
-          yield from rows
-        break
-      else:
-        if self.config.verbose:
-          print('.', end='')
-        sleep(60)
-        timeout -= 1
+      while (timeout > 0):
+        report = API_SearchAds(self.config, self.auth).reports().get(reportId=reportId).execute()
+        if report['isReportReady']:
+          for fragment in range(len(report['files'])):
+            rows = csv_to_rows(API_SearchAds(self.config, self.auth).reports().getFile(reportId=reportId, reportFragment=fragment).execute())
+            next(rows) # skip header in all fragments, schema is given
+            yield from rows
+          break
+        else:
+          if self.config.verbose:
+            print('.', end='')
+          sleep(60)
+          timeout -= 1
 
 
   def get_schema(self, reportId:int=None) -> list:
@@ -190,7 +201,7 @@ class SA_Report():
 
     '''
 
-    if reportId is None: reportId = self.reportId
+    if reportId is None: reportId = self.reportIds[0]
 
     schema = []
     report = API_SearchAds(self.config, self.auth).reports().get(reportId=reportId).execute()
