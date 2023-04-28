@@ -69,17 +69,27 @@ class Drive():
     if url_or_name.startswith('https://drive.google.com/open?id='):
       return url_or_name.split('?id=', 1)[-1]
 
+    elif url_or_name.startswith('https://drive.google.com/'):
+      m = re.search(
+        '\/(?:drive\/folders|file\/d)\/([a-zA-Z0-9-_]+)(?:\/.*)?$',
+        url_or_name
+      )
+      if m:
+        return m.group(1)
+
     elif url_or_name.startswith('https://docs.google.com/'):
       m = re.search(
-          '^(?:https:\/\/docs.google.com\/\w+\/d\/)([a-zA-Z0-9-_]+)(?:\/.*)?$',
-          url_or_name)
+        '^(?:https:\/\/docs.google.com\/\w+\/d\/)([a-zA-Z0-9-_]+)(?:\/.*)?$',
+        url_or_name
+      )
       if m:
         return m.group(1)
 
     elif url_or_name.startswith('https://datastudio.google.com/'):
       m = re.search(
-          '^(?:https:\/\/datastudio.google.com\/c\/\w+\/)([a-zA-Z0-9-_]+)(?:\/.*)?$',
-          url_or_name)
+        '^(?:https:\/\/datastudio.google.com\/c\/\w+\/)([a-zA-Z0-9-_]+)(?:\/.*)?$',
+        url_or_name
+      )
       if m:
         return m.group(1)
   
@@ -96,7 +106,7 @@ class Drive():
           return m.group(1)
   
     # probably a mangled id or name does not exist
-    if config.verbose:
+    if self.config.verbose:
       print('DOCUMENT DOES NOT EXIST', url_or_name)
     return None
   
@@ -179,12 +189,12 @@ class Drive():
   
     # if file exists, return it, prevents obliterating user changes
     if drive_file:
-      if config.verbose:
+      if self.config.verbose:
         print('Drive: File exists.')
   
     # if file does not exist, create it
     else:
-      if config.verbose:
+      if self.config.verbose:
         print('Drive: Creating file.')
   
       # file mime is used for uplaod / fallback
@@ -194,7 +204,7 @@ class Drive():
         file_mime, file_mime
       )[0]
   
-      if config.verbose:
+      if self.config.verbose:
         print('Drive Mimes:', file_mime, drive_mime)
   
       # construct upload object, and stream upload in chunks
@@ -224,7 +234,7 @@ class Drive():
     destination_id = self.file_id(destination_name)
   
     if destination_id:
-      if config.verbose:
+      if self.config.verbose:
         print('Drive: File exists.')
       return self.file_get(destination_id)
   

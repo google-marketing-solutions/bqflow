@@ -54,12 +54,12 @@ python3 bqflow/bqflow/run.py -h
 To execute multiple workflows in parallel, use the following command:
 
 ```
-python3 bqflow/bqflow/startup.py -h
+python3 bqflow/bqflow/schedule_local.py -h
 ```
 
-## VM Startup Script
+## VM Runner Script
 
-To execute workflows on a schedule using a VM, follow [these instructions](https://cloud.google.com/compute/docs/instances/startup-scripts/linux):
+To execute workflows on a schedule within a VM, follow [these instructions](https://cloud.google.com/compute/docs/instances/startup-scripts/linux):
 
   1. Create a [VM](https://cloud.google.com/compute). These are recommended settings:
      * **Series:** E2
@@ -73,21 +73,62 @@ To execute workflows on a schedule using a VM, follow [these instructions](https
      * **Install Pip:** `sudo apt-get install python3-pip`
      * **Install BQFlow:** `git clone https://github.com/google/bqflow`
      * **Install Requirments:** `python3 -m pip install -r bqflow/requirements.txt`
-     * **Print These Instructions In VM:** `python3 bqflow/bqflow/startup.py -h`
+     * **Print These Instructions In VM:** `python3 bqflow/bqflow/schedule_local.py -h`
      * **Create Workflow Directory And Add Workflows:** `mkdir workflows`
-     * **Run Workflows Manually:** `python3 bqflow/bqflow/startup.py`
-  1. Set up a schedule.
+     * **Run Workflows Manually:** `python3 bqflow/bqflow/schedule_local.py`
+  1. Set up the startup script.
      * Log out of the VM.
      * Edit the VM and navigate to Management > Automation > Automation, and add:
        ```
        #!/bin/bash
-       sudo -u $USER bash -c 'python3 /home/$USER/bqflow/bqflow/startup.py'
+       sudo -u $USER bash -c 'python3 /home/$USER/bqflow/bqflow/schedule_local.py'
        shutdown -h +1
        ```
   1. Set up the [schedule tab](https://console.cloud.google.com/compute/instances/instanceSchedules?&tab=instanceSchedules).
 
 **NOTE:** To prevent the VM from shuttind down when you log in you will have to
 comment out the startup logic, save, and then log in.
+
+## Drive Runner Script
+
+To execute the workflows on a schedule from [Google Drive](https://drive.google.com/):
+
+  1. Create a dedicated [Service](https://developers.google.com/workspace/guides/create-credentials#service-account) credential.
+  1. Create a VM, follow **STEP 2** under **VM Runner Script**, and choose the above service credential.
+  1. STOP the VM, not delete, just stop.
+  1. Select [SCOPES](https://developers.google.com/identity/protocols/oauth2/scopes) to the service account:
+     * At minimum you will need:
+        * https://www.googleapis.com/auth/bigquery
+        * https://www.googleapis.com/auth/drive'
+     * For advertising products you should consider:
+        * https://www.googleapis.com/auth/doubleclickbidmanager
+        * https://www.googleapis.com/auth/doubleclicksearch
+        * https://www.googleapis.com/auth/analytics
+        * https://www.googleapis.com/auth/youtube
+        * https://www.googleapis.com/auth/display-video
+        * https://www.googleapis.com/auth/ddmconversions
+        * https://www.googleapis.com/auth/dfareporting
+        * https://www.googleapis.com/auth/dfatrafficking
+        * https://www.googleapis.com/auth/analytics.readonly
+        * https://www.googleapis.com/auth/adwords
+        * https://www.googleapis.com/auth/adsdatahub
+        * https://www.googleapis.com/auth/content
+        * https://www.googleapis.com/auth/cloud-vision
+  1. To apply all the scopes run the [following gcloud command](https://cloud.google.com/sdk/gcloud/reference/beta/compute/instances/set-scopes) from [Cloud Shell](https://cloud.google.com/shell)::
+     ```
+     gcloud beta compute instances set-scopes [VM NAME] --scopes='https://www.googleapis.com/auth/drive,https://www.googleapis.com/auth/bigquery,https://www.googleapis.com/auth/doubleclickbidmanager,https://www.googleapis.com/auth/doubleclicksearch,https://www.googleapis.com/auth/analytics,https://www.googleapis.com/auth/youtube,https://www.googleapis.com/auth/display-video,https://www.googleapis.com/auth/ddmconversions,https://www.googleapis.com/auth/dfareporting,https://www.googleapis.com/auth/dfatrafficking,https://www.googleapis.com/auth/analytics.readonly,https://www.googleapis.com/auth/adwords,https://www.googleapis.com/auth/adsdatahub,https://www.googleapis.com/auth/content,https://www.googleapis.com/auth/cloud-vision' --zone=[ZONE] --service-account=[SERVICE CREDENTIAL EMAIL]`
+     ```
+  1. Set up the startup script.
+     * Edit the VM and navigate to Management > Automation > Automation, and add:
+       ```
+       #!/bin/bash
+       sudo -u $USER bash -c 'python3 /home/$USER/bqflow/bqflow/schedule_drive.py [DRIVE FOLDER LINK] -s DEFAULT -p [CLOUD PROJECT ID]'
+       shutdown -h +1
+       ```
+  1. Set up the [schedule tab](https://console.cloud.google.com/compute/instances/instanceSchedules?&tab=instanceSchedules).
+  1. Start adding workflows to your drive folder and sharing with the service email address from step one.
+     * For security reasons shared folders have to be [DRIVE FOLDER LINK].
+
 
 ## Authentication Credentials
 

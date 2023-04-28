@@ -23,20 +23,19 @@ import argparse
 import textwrap
 import importlib
 
-# handle python 3.8-3.9 transition
-try:
-  from zoneinfo import ZoneInfo
-except:
-  from pytz import timezone as ZoneInfo
-
 from util.configuration import Configuration
+from util.drive import Drive
+from util.google_api import API_Drive
+
+GOOGLE_DRIVE_PREFIX = 'https://drive.google.com/'
 
 
-def get_workflow(filepath):
+def get_workflow(filepath=None, filecontent=None):
   """Loads json for workflow, replaces newlines, and expands includes.
 
     Args:
      - filepath: (string) The local file path to the workflow json file to load.
+     - filecontent: (string) The content of thw workflow to sanitize.
 
     Returns:
       Dictionary of workflow file.
@@ -44,12 +43,13 @@ def get_workflow(filepath):
   """
 
   try:
-    with open(filepath) as workflow_file:
-      stringcontent = workflow_file.read()
-      return json.loads(stringcontent.replace('\n', ' '))
+    if filecontent is None:
+      with open(filepath) as workflow_file:
+        filecontent = workflow_file.read()
+    return json.loads(filecontent.replace('\n', ' '))
   except ValueError as e:
     pos = 0
-    for count, line in enumerate(stringcontent.splitlines(), 1):
+    for count, line in enumerate(filecontent.splitlines(), 1):
       # do not add newlines, e.pos was run on a version where newlines were removed
       pos += len(line)
       if pos >= e.pos:
@@ -184,7 +184,7 @@ def main():
 
   parser.add_argument(
     'workflow',
-     help='Path to workflow json file to run.'
+     help='Path, local or Google Drive link, to workflow json file to run.'
   )
 
   parser.add_argument(
@@ -253,8 +253,6 @@ def main():
 
   args = parser.parse_args()
 
-  workflow = get_workflow(args.workflow)
-
   configuration = Configuration(
     args.project,
     args.service,
@@ -264,6 +262,16 @@ def main():
     args.timezone,
     args.verbose
   )
+
+  if args.workflow.startswith(GOOGLE_DRIVE_PREFIX):
+    auth = 'user' if args.user else 'service'
+    file_id = Drive(configuration, auth).file_id(args.workflow)
+    if file_id is None:
+      raise FileNotFoundError('Cound not parse Google Drive link, please use the link copy feature to get the URL.')
+    file_content = API_Drive(configuration, auth).files().get_media(fileId=file_id).execute().decode()
+    workflow = get_workflow(filecontent=file_content)
+  else:
+    workflow = get_workflow(filepath=args.workflow)
 
   execute(configuration, workflow['tasks'], args.force, args.task)
 
