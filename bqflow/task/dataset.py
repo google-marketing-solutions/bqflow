@@ -19,53 +19,39 @@
 from util.bigquery_api import BigQuery
 
 def dataset(config, task):
+
   if config.verbose:
     print('DATASET', config.project, task['dataset'])
 
   if task.get('delete', False):
-    if config.verbose:
-      print('DATASET DELETE')
-    # In order to fully delete a dataset, it needs to first have all tables
-    # deleted, which is done with the delete_contents=True, and then the actual
-    # dataset can be deleted, which is done with delete_contents=false.
-    BigQuery(config).datasets_delete(
-        task['auth'],
+    BigQuery(config, task['auth']).datasets_delete(
+      config.project,
+      task['dataset'],
+      delete_contents=True
+    )
+    BigQuery(config, task['auth']).datasets_delete(
+      config.project,
+      task['dataset'],
+      delete_contents=False
+    )
+
+  else:
+    if task.get('clear', False):
+      BigQuery(config, task['auth']).datasets_delete(
         config.project,
         task['dataset'],
         delete_contents=True
-    )
-    BigQuery(config).datasets_delete(
-        task['auth'],
-        config.project,
-        task['dataset'],
-        delete_contents=False
-    )
-  else:
-    if task.get('clear', False):
-      if config.project:
-        print('DATASET CLEAR')
-      BigQuery(config).datasets_delete(
-          task['auth'],
-          config.project,
-          task['dataset'],
-          delete_contents=True
       )
 
-    if config.verbose:
-      print('DATASET CREATE')
-    BigQuery(config).datasets_create(
-        task['auth'],
-        config.project,
-        task['dataset'],
-        task.get('expiration_days')
+    BigQuery(config, task['auth']).datasets_create(
+      config.project,
+      task['dataset'],
+      task.get('expiration_days')
     )
 
-    if config.verbose:
-      print('DATASET ACCESS')
-    BigQuery(config).datasets_access(
-        task['auth'],
-        config.project,
-        task['dataset'],
-        emails=task.get('emails', []),
-        groups=task.get('groups', [])
+    BigQuery(config, task['auth']).datasets_access(
+      config.project,
+      task['dataset'],
+      emails=task.get('emails', []),
+      groups=task.get('groups', [])
     )

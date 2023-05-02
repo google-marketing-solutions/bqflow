@@ -214,12 +214,13 @@ def query_parameters(query, parameters):
 
 class BigQuery():
 
-  def __init__(self, config):
+  def __init__(self, config, auth):
     self.config = config
+    self.auth = auth
     self.job = None
 
 
-  def job_wait(self, auth, job=None):
+  def job_wait(self, job=None):
     if job is not None:
       self.job = job
 
@@ -227,7 +228,7 @@ class BigQuery():
       if self.config.verbose:
         print('BIGQUERY JOB WAIT:', self.job['jobReference']['jobId'])
 
-      request = API_BigQuery(self.config, auth).jobs().get(
+      request = API_BigQuery(self.config, self.auth).jobs().get(
           projectId=self.job['jobReference']['projectId'],
           jobId=self.job['jobReference']['jobId'])
 
@@ -250,7 +251,7 @@ class BigQuery():
           break
 
 
-  def datasets_create(self, auth, project_id, dataset_id, expiration_days=None):
+  def datasets_create(self, project_id, dataset_id, expiration_days=None):
 
     body = {
       'description': dataset_id,
@@ -266,7 +267,7 @@ class BigQuery():
       body['defaultTableExpirationMs'] = str(int((expiration_days * 24 * 60 * 60) * 1000)) # string in milliseconds
 
     try:
-      API_BigQuery(self.config, auth).datasets().insert(
+      API_BigQuery(self.config, self.auth).datasets().insert(
         projectId=project_id,
         body=body
       ).execute()
@@ -277,9 +278,9 @@ class BigQuery():
       return False
 
 
-  def datasets_delete(self, auth, project_id, dataset_id, delete_contents=True):
+  def datasets_delete(self, project_id, dataset_id, delete_contents=True):
     try:
-      API_BigQuery(self.config, auth).datasets().delete(
+      API_BigQuery(self.config, self.auth).datasets().delete(
         projectId=project_id,
         datasetId=dataset_id,
         deleteContents=delete_contents
@@ -294,7 +295,6 @@ class BigQuery():
   # roles = READER, WRITER, OWNER
   def datasets_access(
     self,
-    auth,
     project_id,
     dataset_id,
     role='READER',
@@ -304,8 +304,10 @@ class BigQuery():
   ):
 
     if emails or groups or views:
-      access = API_BigQuery(self.config, auth).datasets().get(
-          projectId=project_id, datasetId=dataset_id).execute()['access']
+      access = API_BigQuery(self.config, self.auth).datasets().get(
+        projectId=project_id,
+        datasetId=dataset_id
+      ).execute()['access']
 
       # if emails
       for email in emails:
@@ -330,31 +332,30 @@ class BigQuery():
           }
         })
 
-      API_BigQuery(self.config, auth).datasets().patch(
+      API_BigQuery(self.config, self.auth).datasets().patch(
         projectId=project_id,
         datasetId=dataset_id,
         body={'access': access}
       ).execute()
 
 
-  def run_query(self, auth, project_id, query, legacy=True, dataset_id=None):
+  def run_query(self, project_id, query, legacy=True, dataset_id=None):
 
     body = {'query': query, 'useLegacySql': legacy}
 
     if dataset_id:
       body['defaultDataset'] = {'datasetId': dataset_id}
 
-    self.job = API_BigQuery(self.config, auth).jobs().query(
+    self.job = API_BigQuery(self.config, self.auth).jobs().query(
       projectId=project_id,
       body=body
     ).execute()
 
-    self.job_wait(auth)
+    self.job_wait()
 
 
   def query_to_table(
     self,
-    auth,
     project_id,
     dataset_id,
     table_id,
@@ -363,7 +364,7 @@ class BigQuery():
     legacy=False
   ):
 
-    self.job = API_BigQuery(self.config, auth).jobs().insert(
+    self.job = API_BigQuery(self.config, self.auth).jobs().insert(
       projectId=self.config.project,
       body = {
         'configuration': {
@@ -382,12 +383,11 @@ class BigQuery():
         }
       }
     ).execute()
-    self.job_wait(auth)
+    self.job_wait()
 
 
   def query_to_view(
     self,
-    auth,
     project_id,
     dataset_id,
     view_id,
@@ -408,14 +408,14 @@ class BigQuery():
       }
     }
 
-    self.job = API_BigQuery(self.config, auth).tables().insert(
+    self.job = API_BigQuery(self.config, self.auth).tables().insert(
       projectId=self.config.project,
       datasetId=dataset_id,
       body=body
     ).execute()
 
     if response is None and replace:
-      return API_BigQuery(self.config, auth).tables().update(
+      return API_BigQuery(self.config, self.auth).tables().update(
         projectId=self.config.project,
         datasetId=dataset_id,
         tableId=view_id,
@@ -426,7 +426,6 @@ class BigQuery():
   # disposition: WRITE_TRUNCATE, WRITE_APPEND, WRITE_EMPTY
   def storage_to_table(
     self,
-    auth,
     project_id,
     dataset_id,
     table_id,
@@ -468,20 +467,19 @@ class BigQuery():
       body['configuration']['load']['sourceFormat'] = 'CSV'
       body['configuration']['load']['skipLeadingRows'] = skip_rows
 
-    self.job = API_BigQuery(self.config, auth).jobs().insert(
+    self.job = API_BigQuery(self.config, self.auth).jobs().insert(
       projectId=self.config.project,
       body=body
     ).execute()
 
     if wait:
-      self.job_wait(auth)
+      self.job_wait()
     else:
       return self.job
 
 
   def rows_to_table(
     self,
-    auth,
     project_id,
     dataset_id,
     table_id,
@@ -517,7 +515,6 @@ class BigQuery():
 
         buffer_data.seek(0)  # reset for read
         self.io_to_table(
-          auth,
           project_id,
           dataset_id,
           table_id,
@@ -538,7 +535,6 @@ class BigQuery():
     # if no rows, clear table to simulate empty write
     if not has_rows:
       return self.io_to_table(
-        auth,
         project_id,
         dataset_id,
         table_id,
@@ -553,7 +549,6 @@ class BigQuery():
 
   def json_to_table(
     self,
-    auth,
     project_id,
     dataset_id,
     table_id,
@@ -582,7 +577,7 @@ class BigQuery():
           print('BigQuery Buffer Size', buffer_data.tell())
         buffer_data.seek(0)  # reset for read
 
-        self.io_to_table(auth, project_id, dataset_id, table_id, buffer_data,
+        self.io_to_table(project_id, dataset_id, table_id, buffer_data,
                     'NEWLINE_DELIMITED_JSON', schema, 0, disposition)
 
         # reset buffer for next loop, be sure to do an append to the table
@@ -598,7 +593,6 @@ class BigQuery():
     # if no rows, clear table to simulate empty write
     if not has_rows:
       return self.io_to_table(
-        auth,
         project_id,
         dataset_id,
         table_id,
@@ -613,7 +607,6 @@ class BigQuery():
 
   def io_to_table(
     self,
-    auth,
     project_id,
     dataset_id,
     table_id,
@@ -665,7 +658,7 @@ class BigQuery():
       if source_format == 'CSV':
         body['configuration']['load']['skipLeadingRows'] = skip_rows
 
-      job = API_BigQuery(self.config, auth).jobs().insert(
+      job = API_BigQuery(self.config, self.auth).jobs().insert(
         projectId=self.config.project,
         body=body,
         media_body=media
@@ -681,7 +674,7 @@ class BigQuery():
         print('Uploaded 100%')
 
       if wait:
-        self.job_wait(auth, execution)
+        self.job_wait(execution)
       else:
         return execution
 
@@ -689,12 +682,11 @@ class BigQuery():
     elif disposition == 'WRITE_TRUNCATE':
       if self.config.verbose:
         print('BIGQUERY: No data, clearing table.')
-      self.table_create(self.config, auth, project_id, dataset_id, table_id, schema)
+      self.table_create(project_id, dataset_id, table_id, schema)
 
 
   def incremental_rows_to_table(
     self,
-    auth,
     project_id,
     dataset_id,
     table_id,
@@ -711,8 +703,6 @@ class BigQuery():
     #load the data in rows to BQ into a temp table
     table_id_temp = table_id + str(uuid.uuid4()).replace('-', '_')
     self.rows_to_table(
-      self.config,
-      auth,
       project_id,
       dataset_id,
       table_id_temp,
@@ -725,24 +715,21 @@ class BigQuery():
     try:
       #query the temp table to find the max and min date
       start_date = self._get_min_date_from_table(
-        self.config, auth,
         project_id,
         dataset_id,
         table_id_temp
       )
       end_date = self._get_max_date_from_table(
-        self.config, auth,
         project_id,
         dataset_id,
         table_id_temp,
       )
 
       #check if master table exists: if not create it, if so clear old data
-      if not self.table_exists(self.config, auth, project_id, dataset_id, table_id):
-        self.table_create(self.config, auth, project_id, dataset_id, table_id)
+      if not self.table_exists(project_id, dataset_id, table_id):
+        self.table_create(project_id, dataset_id, table_id)
       else:
         self._clear_data_in_date_range_from_table(
-          self.config, auth,
           project_id,
           dataset_id,
           table_id,
@@ -755,7 +742,6 @@ class BigQuery():
       query = ('SELECT * FROM `' + project_id + '.' + dataset_id + '.' +
                table_id_temp + '` ')
       self.query_to_table(
-        self.config, auth,
         project_id,
         dataset_id,
         table_id,
@@ -767,7 +753,6 @@ class BigQuery():
 
       #delete temp table
       self.drop_table(
-        self.config, auth,
         project_id,
         dataset_id,
         table_id_temp,
@@ -777,7 +762,6 @@ class BigQuery():
     except:
       #delete temp table
       self.drop_table(
-        self.config, auth,
         project_id,
         dataset_id,
         table_id_temp,
@@ -787,7 +771,6 @@ class BigQuery():
 
   def table_create(
     self,
-    auth,
     project_id,
     dataset_id,
     table_id,
@@ -798,7 +781,7 @@ class BigQuery():
   ):
 
     if overwrite:
-      self.table_delete(self.config, auth, project_id, dataset_id, table_id)
+      self.table_delete(project_id, dataset_id, table_id)
 
     body = {
       'tableReference': {
@@ -820,27 +803,27 @@ class BigQuery():
     if is_time_partition:
       body['timePartitioning'] = {'type': 'DAY'}
 
-    API_BigQuery(self.config, auth).tables().insert(
+    API_BigQuery(self.config, self.auth).tables().insert(
       projectId=project_id,
       datasetId=dataset_id,
       body=body
     ).execute()
 
 
-  def table_get(self, auth, project_id, dataset_id, table_id):
-    return API_BigQuery(self.config, auth).tables().get(
+  def table_get(self, project_id, dataset_id, table_id):
+    return API_BigQuery(self.config, self.auth).tables().get(
       projectId=project_id,
       datasetId=dataset_id,
       tableId=table_id
     ).execute()
 
 
-  def table_list(self, auth, project_id, dataset_id=None):
+  def table_list(self, project_id, dataset_id=None):
     if dataset_id is None:
       datasets = [
         d['datasetReference']['datasetId'] for d in API_BigQuery(
           self.config,
-          auth,
+          self.auth,
           iterate=True
         ).datasets().list(
           projectId=project_id,
@@ -851,7 +834,7 @@ class BigQuery():
       datasets = [dataset_id]
 
     for dataset_id in datasets:
-      for table in API_BigQuery(self.config, auth, iterate=True).tables().list(
+      for table in API_BigQuery(self.config, self.auth, iterate=True).tables().list(
         projectId=project_id,
         datasetId=dataset_id,
         fields='tables.tableReference, tables.type, nextPageToken'
@@ -859,9 +842,9 @@ class BigQuery():
         yield table['tableReference']['datasetId'], table['tableReference']['tableId'], table['type']
 
 
-  def table_exists(self, auth, project_id, dataset_id, table_id):
+  def table_exists(self, project_id, dataset_id, table_id):
     try:
-      self.table_get(self.config, auth, project_id, dataset_id, table_id)
+      self.table_get(project_id, dataset_id, table_id)
       return True
     except HttpError as e:
       if e.resp.status != 404:
@@ -869,9 +852,9 @@ class BigQuery():
       return False
 
 
-  def table_delete(self, auth, project_id, dataset_id, table_id):
+  def table_delete(self, project_id, dataset_id, table_id):
     try:
-      API_BigQuery(self.config, auth).tables().delete(
+      API_BigQuery(self.config, self.auth).tables().delete(
         projectId=project_id,
         datasetId=dataset_id,
         tableId=table_id
@@ -885,7 +868,6 @@ class BigQuery():
 
   def table_copy(
     self,
-    auth,
     from_project,
     from_dataset,
     from_table,
@@ -893,7 +875,7 @@ class BigQuery():
     to_dataset,
     to_table
   ):
-    self.job = API_BigQuery(self.config, auth).jobs().insert(
+    self.job = API_BigQuery(self.config, self.auth).jobs().insert(
       projectId=self.config.project,
       body = {
         'copy': {
@@ -910,12 +892,11 @@ class BigQuery():
         }
       }
     ).execute()
-    self.job_wait(auth)
+    self.job_wait()
 
 
   def table_to_rows(
     self,
-    auth,
     project_id,
     dataset_id,
     table_id,
@@ -928,7 +909,7 @@ class BigQuery():
     if self.config.verbose:
       print('BIGQUERY ROWS:', project_id, dataset_id, table_id)
 
-    table = API_BigQuery(self.config, auth).tables().get(
+    table = API_BigQuery(self.config, self.auth).tables().get(
       projectId=project_id,
       datasetId=dataset_id,
       tableId=table_id
@@ -941,7 +922,7 @@ class BigQuery():
     if table_type == 'TABLE':
       for row in API_BigQuery(
         self.config,
-        auth,
+        self.auth,
         iterate=True
       ).tabledata().list(
         projectId=project_id,
@@ -959,8 +940,6 @@ class BigQuery():
 
     else:
       yield from self.query_to_rows(
-        self.config,
-        auth,
         project_id,
         dataset_id,
         'SELECT * FROM %s' % table_id, row_max,
@@ -969,22 +948,22 @@ class BigQuery():
       )
 
 
-  def table_to_schema(self, auth, project_id, dataset_id, table_id):
+  def table_to_schema(self, project_id, dataset_id, table_id):
     if self.config.verbose:
       print('TABLE SCHEMA:', project_id, dataset_id, table_id)
 
-    return API_BigQuery(self.config, auth).tables().get(
+    return API_BigQuery(self.config, self.auth).tables().get(
       projectId=project_id,
       datasetId=dataset_id,
       tableId=table_id
     ).execute()['schema'].get('fields', [])
 
 
-  def table_to_type(self, auth, project_id, dataset_id, table_id):
+  def table_to_type(self, project_id, dataset_id, table_id):
     if self.config.verbose:
       print('TABLE TYPE:', project_id, dataset_id, table_id)
 
-    return API_BigQuery(self.config, auth).tables().get(
+    return API_BigQuery(self.config, self.auth).tables().get(
       projectId=project_id,
       datasetId=dataset_id,
       tableId=table_id
@@ -993,7 +972,6 @@ class BigQuery():
 
   def query_to_rows(
     self,
-    auth,
     project_id,
     dataset_id,
     query,
@@ -1023,11 +1001,11 @@ class BigQuery():
 
     # wait for query to complete
 
-    response = API_BigQuery(self.config, auth).jobs().query(
+    response = API_BigQuery(self.config, self.auth).jobs().query(
         projectId=project_id, body=body).execute()
     while not response['jobComplete']:
       time.sleep(5)
-      response = API_BigQuery(self.config, auth).jobs().getQueryResults(
+      response = API_BigQuery(self.config, self.auth).jobs().getQueryResults(
         projectId=project_id,
         jobId=response['jobReference']['jobId']
       ).execute(iterate=False)
@@ -1042,13 +1020,13 @@ class BigQuery():
         row_count += 1
 
       if 'PageToken' in response:
-        response = API_BigQuery(self.config, auth).jobs().getQueryResults(
+        response = API_BigQuery(self.config, self.auth).jobs().getQueryResults(
           projectId=project_id,
           jobId=response['jobReference']['jobId'],
           pageToken=response['PageToken']
         ).execute(iterate=False)
       elif row_count < int(response['totalRows']):
-        response = API_BigQuery(self.config, auth).jobs().getQueryResults(
+        response = API_BigQuery(self.config, self.auth).jobs().getQueryResults(
           projectId=project_id,
           jobId=response['jobReference']['jobId'],
           startIndex=row_count
@@ -1057,7 +1035,7 @@ class BigQuery():
         break
 
 
-  def query_to_schema(self, auth, project_id, dataset_id, query, legacy=True):
+  def query_to_schema(self, project_id, dataset_id, query, legacy=True):
 
     if self.config.verbose:
       print('BIGQUERY QUERY SCHEMA:', project_id, dataset_id)
@@ -1076,7 +1054,7 @@ class BigQuery():
         'datasetId': dataset_id
       }
 
-    response = API_BigQuery(self.config, auth).jobs().query(
+    response = API_BigQuery(self.config, self.auth).jobs().query(
       projectId=project_id,
       body=body
     ).execute()
@@ -1084,11 +1062,13 @@ class BigQuery():
     return response['schema'].get('fields', [])
 
 
-  def _get_max_date_from_table(self, auth,
-                               project_id,
-                               dataset_id,
-                               table_id,
-                               billing_project_id=None):
+  def _get_max_date_from_table(
+    self,
+    project_id,
+    dataset_id,
+    table_id,
+    billing_project_id=None
+  ):
     if not billing_project_id:
       billing_project_id = project_id
 
@@ -1104,14 +1084,13 @@ class BigQuery():
         'useLegacySql': False,
     }
 
-    job = API_BigQuery(self.config, auth).jobs().query(
+    job = API_BigQuery(self.config, self.auth).jobs().query(
         projectId=billing_project_id, body=body).execute()
     return job['rows'][0]['f'][0]['v']
 
 
   def _get_min_date_from_table(
     self,
-    auth,
     project_id,
     dataset_id,
     table_id
@@ -1122,7 +1101,7 @@ class BigQuery():
       '.' + table_id + '` '
     )
 
-    self.job = API_BigQuery(self.config, auth).jobs().query(
+    self.job = API_BigQuery(self.config, self.auth).jobs().query(
       projectId=self.config.project,
       body = {
         'kind': 'bigquery#queryRequest',
@@ -1134,7 +1113,7 @@ class BigQuery():
       }
     ).execute()
 
-    self.job_wait(auth)
+    self.job_wait()
 
     return self.job['rows'][0]['f'][0]['v']
 
@@ -1142,7 +1121,6 @@ class BigQuery():
   #start and end date must be in format YYYY-MM-DD
   def _clear_data_in_date_range_from_table(
     self,
-    auth,
     project_id,
     dataset_id,
     table_id,
@@ -1156,7 +1134,7 @@ class BigQuery():
       'AND Report_Day <= "' + end_date + '"'
     )
 
-    self.job = API_BigQuery(self.config, auth).jobs().query(
+    self.job = API_BigQuery(self.config, self.auth).jobs().query(
       projectId=self.config.project,
       body = {
         'kind': 'bigquery#queryRequest',
@@ -1168,5 +1146,5 @@ class BigQuery():
       }
     ).execute()
 
-    self.job_wait(auth)
-    return self.job['rows'][0]['f'][0]['v']
+    self.job_wait()
+    return job['rows'][0]['f'][0]['v']

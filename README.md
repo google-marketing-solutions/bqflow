@@ -91,7 +91,7 @@ comment out the startup logic, save, and then log in.
 
 ## Drive Runner Script
 
-To execute the workflows on a schedule from [Google Drive](https://drive.google.com/):
+To execute the workflows on a schedule from [Google Drive](https://www.google.com/drive/download/):
 
   1. Create a dedicated [Service](https://developers.google.com/workspace/guides/create-credentials#service-account) credential.
   1. Create a VM, follow **STEP 2** under **VM Runner Script**, and choose the above service credential.
@@ -127,7 +127,8 @@ To execute the workflows on a schedule from [Google Drive](https://drive.google.
        ```
   1. Set up the [schedule tab](https://console.cloud.google.com/compute/instances/instanceSchedules?&tab=instanceSchedules).
   1. Start adding workflows to your drive folder and sharing with the service email address from step one.
-     * For security reasons shared folders have to be [DRIVE FOLDER LINK].
+     * For security reasons workflows have to be in [DRIVE FOLDER LINK].
+     * Edit JSON files from your machine using [Google Drive For Desktop](https://www.google.com/drive/download/).
 
 
 ## Authentication Credentials

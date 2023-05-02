@@ -189,8 +189,10 @@ def google_api_build_results(config, auth, api_call, results):
 
     results['bigquery']['skip_rows'] = 0
 
-    BigQuery(config).table_create(
-      results['bigquery'].get('auth', auth),
+    BigQuery(
+      config,
+      results['bigquery'].get('auth', auth)
+    ).table_create(
       config.project,
       results['bigquery']['dataset'],
       results['bigquery']['table'],
@@ -226,8 +228,10 @@ def google_api_build_errors(config, auth, api_call, errors):
     errors['bigquery']['skip_rows'] = 0
     errors['bigquery']['disposition'] = 'WRITE_TRUNCATE'
 
-    BigQuery(config).table_create(
-      errors['bigquery'].get('auth', auth),
+    BigQuery(
+      config,
+      errors['bigquery'].get('auth', auth)
+    ).table_create(
       config.project,
       errors['bigquery']['dataset'],
       errors['bigquery']['table'],

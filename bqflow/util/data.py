@@ -15,6 +15,7 @@
 #  limitations under the License.
 #
 ###########################################################################
+
 """Processes standard read / write JSON block for dynamic loading of data.
 
 The goal is to create standard re-usable input output blocks.  These functions
@@ -28,8 +29,6 @@ Key benfits include:
   - Using standard blocks is a big time savings.
 
 """
-
-import traceback
 
 from util.storage_api import parse_path, makedirs_safe, object_put, bucket_create
 from util.bigquery_api import BigQuery, query_parameters
@@ -114,11 +113,11 @@ def get_rows(config, auth, source, as_object=False, unnest=False):
     # should be sheets, deprecate sheet over next few releases
     if 'sheet' in source:
       rows = sheets_read(
-          config,
-          source['sheet'].get('auth', auth),
-          source['sheet']['sheet'],
-          source['sheet']['tab'],
-          source['sheet']['range'],
+        config,
+        source['sheet'].get('auth', auth),
+        source['sheet']['sheet'],
+        source['sheet']['tab'],
+        source['sheet']['range'],
       )
 
       for row in rows:
@@ -126,11 +125,11 @@ def get_rows(config, auth, source, as_object=False, unnest=False):
 
     if 'sheets' in source:
       rows = sheets_read(
-          config,
-          source['sheets'].get('auth', auth),
-          source['sheets']['sheet'],
-          source['sheets']['tab'],
-          source['sheets']['range'],
+        config,
+        source['sheets'].get('auth', auth),
+        source['sheets']['sheet'],
+        source['sheets']['tab'],
+        source['sheets']['range'],
       )
 
       if rows:
@@ -146,22 +145,21 @@ def get_rows(config, auth, source, as_object=False, unnest=False):
       unnest = unnest or source.get('single_cell', False) or source.get('unnest', False)
 
       if 'table' in source['bigquery']:
-        rows = BigQuery(config).table_to_rows(
-            source['bigquery'].get('auth', auth),
-            source['bigquery'].get('project', config.project),
-            source['bigquery']['dataset'],
-            source['bigquery']['table'],
-            as_object=as_object or source['bigquery'].get('as_object', False))
+        rows = BigQuery(config, source['bigquery'].get('auth', auth)).table_to_rows(
+          source['bigquery'].get('project', config.project),
+          source['bigquery']['dataset'],
+          source['bigquery']['table'],
+          as_object=as_object or source['bigquery'].get('as_object', False)
+        )
 
       else:
-        rows = BigQuery(config).query_to_rows(
-            source['bigquery'].get('auth', auth),
-            source['bigquery'].get('project', config.project),
-            source['bigquery']['dataset'],
-            query_parameters(source['bigquery']['query'],
-                             source['bigquery'].get('parameters', {})),
-            legacy=source['bigquery'].get('legacy', False),
-            as_object=as_object or source['bigquery'].get('as_object', False))
+        rows = BigQuery(config, source['bigquery'].get('auth', auth)).query_to_rows(
+          source['bigquery'].get('project', config.project),
+          source['bigquery']['dataset'],
+          query_parameters(source['bigquery']['query'], source['bigquery'].get('parameters', {})),
+          legacy=source['bigquery'].get('legacy', False),
+          as_object=as_object or source['bigquery'].get('as_object', False)
+        )
 
       for row in rows:
         yield row[0] if not as_object and unnest else row
@@ -239,40 +237,37 @@ def put_rows(config, auth, destination, rows, schema=None, variant=''):
     skip_rows = 1 if destination['bigquery'].get('header') and schema else 0
 
     if destination['bigquery'].get('format', 'CSV') == 'JSON':
-      BigQuery(config).json_to_table(
-          destination['bigquery'].get('auth', auth),
-          destination['bigquery'].get('project_id', config.project),
-          destination['bigquery']['dataset'],
-          destination['bigquery']['table'] + variant,
-          rows,
-          schema,
-          destination['bigquery'].get('disposition', 'WRITE_TRUNCATE'),
+      BigQuery(config, destination['bigquery'].get('auth', auth)).json_to_table(
+        destination['bigquery'].get('project_id', config.project),
+        destination['bigquery']['dataset'],
+        destination['bigquery']['table'] + variant,
+        rows,
+        schema,
+        destination['bigquery'].get('disposition', 'WRITE_TRUNCATE'),
       )
 
     elif destination['bigquery'].get('is_incremental_load', False) == True:
-      BigQuery(config).incremental_rows_to_table(
-          config,
-          destination['bigquery'].get('auth', auth),
-          destination['bigquery'].get('project_id', config.project),
-          destination['bigquery']['dataset'],
-          destination['bigquery']['table'] + variant,
-          rows,
-          schema,
-          destination['bigquery'].get('skip_rows', skip_rows),
-          destination['bigquery'].get('disposition', 'WRITE_APPEND'),
-          billing_project_id=config.project)
+      BigQuery(config, destination['bigquery'].get('auth', auth)).incremental_rows_to_table(
+        destination['bigquery'].get('project_id', config.project),
+        destination['bigquery']['dataset'],
+        destination['bigquery']['table'] + variant,
+        rows,
+        schema,
+        destination['bigquery'].get('skip_rows', skip_rows),
+        destination['bigquery'].get('disposition', 'WRITE_APPEND'),
+        billing_project_id=config.project
+      )
 
     else:
 
-      BigQuery(config).rows_to_table(
-          destination['bigquery'].get('auth', auth),
-          destination['bigquery'].get('project_id', config.project),
-          destination['bigquery']['dataset'],
-          destination['bigquery']['table'] + variant,
-          rows,
-          schema,
-          destination['bigquery'].get('skip_rows', skip_rows),
-          destination['bigquery'].get('disposition', 'WRITE_TRUNCATE'),
+      BigQuery(config, destination['bigquery'].get('auth', auth)).rows_to_table(
+        destination['bigquery'].get('project_id', config.project),
+        destination['bigquery']['dataset'],
+        destination['bigquery']['table'] + variant,
+        rows,
+        schema,
+        destination['bigquery'].get('skip_rows', skip_rows),
+        destination['bigquery'].get('disposition', 'WRITE_TRUNCATE'),
       )
 
   elif 'sheets' in destination:
