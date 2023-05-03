@@ -100,19 +100,23 @@ class Deployment:
             # ADD: spawn a thread here and have the process run
             # wait for threads to finishif thread count > mutiprocesing.cpu_count()
             s = os.path.join(path, 'service.json')
+            c = os.path.join(path, 'user.json')
             if os.path.isfile(s):
                 project = self.get_project_from_service(s)
-                service = s
+                auth = f'-s {s}'
+            elif os.path.isfile(c):
+                project = self.get_project_from_vm()
+                auth = f'-u {c}'
             else:
                 project = self.get_project_from_vm()
-                service = 'DEFAULT'
+                auth = '-s DEFAULT'
             # Iterate over workflow JSON files only
             for filename in files:
-                if filename != 'service.json':
+                if filename != 'service.json' and filename != 'user.json':
                     workflow = os.path.join(path, filename)
                     # checking if it is a file
                     if os.path.isfile(workflow):
-                        command = f'python3 bqflow/bqflow/run.py {workflow} -s {service} -p {project} --verbose'
+                        command = f'python3 bqflow/run.py --workflow {workflow} {auth} -p {project} --verbose'
                         self.execute_command(command)
         print(f'Finished executing workflows in directory {directory}.')
 
