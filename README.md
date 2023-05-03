@@ -13,7 +13,7 @@ to write back to the API using a query so you can change settings.
 When you use this repository, restful APIs are turned into tables in BigQuery.
 You can then write [SQL logic](https://cloud.google.com/bigquery/docs/reference/standard-sql/introduction#sql)
 to manipulate and analyze those tables to either present in a dashboard, or
-write back into another API call. See the [Wiki](../../wiki) for examples. 
+write back into another API call. See the [Wiki](../../wiki) for examples.
 
 All [Google APIs](https://developers.google.com/apis-explorer) are supported,
 our team specifically uses this for:
@@ -67,7 +67,7 @@ To execute workflows on a schedule within a VM, follow [these instructions](http
      * **Boot Disk Size:** 10GB is enough, all data is stored in memory.
      * **Boot Disk Image:** Debian GNU/Linux 11 (bullseye) or higher
      * **Service Account:** One you create (see below) or None, depending on setup.
-     * **Firewall:** Leave unchecked, there is no need for HTTP/HTTPS. 
+     * **Firewall:** Leave unchecked, there is no need for HTTP/HTTPS.
   1. Log into the VM and install BQFlow.
      * **Install Git:** `sudo apt-get install git`
      * **Install Pip:** `sudo apt-get install python3-pip`
@@ -94,12 +94,13 @@ comment out the startup logic, save, and then log in.
 To execute the workflows on a schedule from [Google Drive](https://www.google.com/drive/download/):
 
   1. Create a dedicated [Service](https://developers.google.com/workspace/guides/create-credentials#service-account) credential.
+  1. Be sure to grant the service the [IAM Role](https://cloud.google.com/iam/docs/grant-role-console) **roles/bigquery.dataOwner** and **roles/bigquery.jobUser**.
   1. Create a VM, follow **STEP 2** under **VM Runner Script**, and choose the above service credential.
   1. STOP the VM, not delete, just stop.
   1. Select [SCOPES](https://developers.google.com/identity/protocols/oauth2/scopes) to the service account:
      * At minimum you will need:
         * https://www.googleapis.com/auth/bigquery
-        * https://www.googleapis.com/auth/drive'
+        * https://www.googleapis.com/auth/drive
      * For advertising products you should consider:
         * https://www.googleapis.com/auth/doubleclickbidmanager
         * https://www.googleapis.com/auth/doubleclicksearch
@@ -140,8 +141,9 @@ the option to use either. Please follow [Google Cloud Security Best Practices](h
 when handling credentials.
 
   1. For [Service](https://developers.google.com/workspace/guides/create-credentials#service-account) you have 2 options:
-     * **Keyless**, provision credentials and assign to VM, a key is never downloaded but all workflows must run as this service. 
+     * **Keyless**, provision credentials and assign to VM, a key is never downloaded but all workflows must run as this service.
      * **JSON**, dowload the service keys to the VM (or equivalent) and use in combination with specific workflows.
+     * Be sure to grant the service the [IAM Roles](https://cloud.google.com/iam/docs/grant-role-console) **roles/bigquery.dataOwner** and **roles/bigquery.jobUser**.
   1. For [User](https://developers.google.com/workspace/guides/create-credentials#oauth-client-id)
      * Run `python3 bqflow/bqflow/auth.py -h` and follow instructions.
 
@@ -180,4 +182,4 @@ when handling credentials.
 
 **Is it a framework?**
    1. No, its a Python function for making API calls to and from BigQuery.
-   1. Yes, there is a sample VM startup script you can use to run multiple jobs. 
+   1. Yes, there is a sample VM startup script you can use to run multiple jobs.
