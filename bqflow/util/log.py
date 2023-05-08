@@ -27,8 +27,8 @@ class Log():
     using BQFlow logs for debugging, that should be done locally.
 
     Args:
-      * config: (class) Crednetials wrapper.
-      * destiation: (dict) Currently only bigquery and stdout is supported if None.
+      * config: (class) Credentials wrapper, see util/configuration.py.
+      * destination: (dict) Currently only bigquery and stdout is supported if None.
 
     """
 

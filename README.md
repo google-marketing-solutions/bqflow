@@ -150,7 +150,7 @@ when handling credentials.
 # Logs
 
   1. **For debugging** add the --verbose or -v parameter to any of the commands.
-  2. **For production** add a log configuration to each workflow file. Change to __WRITE_TRUNCATE__ to replace the log file each time
+  2. **For production** add a log configuration to each workflow file. Change to __WRITE_TRUNCATE__ to replace the log file each time.
      ```
      {
        "log":{ "bigquery":{ "auth":"service", "dataset":"some_dataset", "table":"BQFlow_Log", "disposition":"WRITE_APPEND" }},
