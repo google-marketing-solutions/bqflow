@@ -88,7 +88,7 @@ class SA_Report():
 
     '''
 
-    if column not in self.columns:
+    if column not in self.columns and advertiserId:
       for saved_column in API_SearchAds(self.config, self.auth, iterate=True).savedcolumns().list(agencyId=agencyId, advertiserId=advertiserId).execute():
         self.columns[saved_column['savedColumnName']] = SA_TYPES.get(saved_column['type'], 'STRING')
     return self.columns.get(column, 'STRING')
@@ -215,7 +215,7 @@ class SA_Report():
       name = column.get('columnName', column.get('savedColumnName'))
       schema.append({
         'name': column_header_sanitize(name),
-        'type':self.column_type(report['request']['reportScope']['agencyId'],report['request']['reportScope']['advertiserId'], name),
+        'type':self.column_type(report['request']['reportScope']['agencyId'], report['request']['reportScope'].get('advertiserId'), name),
         'mode': 'NULLABLE'
       })
 
