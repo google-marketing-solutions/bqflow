@@ -86,12 +86,6 @@ Example Write Insertion Orders into DV360 from BigQuery:
           "dataset": "CM_DV_Demo",
           "table": "DV_IO_Patch_Results"
         }
-      },
-      "errors": {
-        "bigquery": {
-          "dataset": "CM_DV_Demo",
-          "table": "DV_IO_Patch_Errors"
-        }
       }
     }}
 """
@@ -104,15 +98,6 @@ from util.data import put_rows
 from util.cm_api import get_profile_for_api
 from util.google_api import API
 from util.discovery_to_bigquery import Discovery_To_BigQuery
-
-
-ERROR_SCHEMA = [
-  { 'name': 'Error', 'type': 'STRING', 'mode': 'NULLABLE' },
-  { 'name': 'Parameters', 'type': 'RECORD', 'mode': 'REPEATED', 'fields': [
-    { 'name': 'Key', 'type': 'STRING', 'mode': 'NULLABLE' },
-    { 'name': 'Value', 'type': 'STRING', 'mode': 'NULLABLE' },
-  ]}
-]
 
 
 def google_api_initilaize(config, api_call, alias=None):
@@ -184,6 +169,9 @@ def google_api_build_results(config, auth, api_call, results):
         api_call.get('iterate', False)
       )
 
+    if 'auth' not in results['bigquery']:
+      results['bigquery']['auth'] = auth
+
     if 'format' not in results['bigquery']:
       results['bigquery']['format'] = 'JSON'
 
@@ -191,7 +179,7 @@ def google_api_build_results(config, auth, api_call, results):
 
     BigQuery(
       config,
-      results['bigquery'].get('auth', auth)
+      results['bigquery']['auth'],
     ).table_create(
       config.project,
       results['bigquery']['dataset'],
@@ -202,44 +190,6 @@ def google_api_build_results(config, auth, api_call, results):
     )
 
   return results
-
-
-def google_api_build_errors(config, auth, api_call, errors):
-  """Builds the BigQuery table to house the Google API call errors.
-
-  Optional piece of the recipe, will create a BigQuery table for errors.
-  Takes errors, which defines a bigquery endpoint, and adds fields.
-
-  Args:
-    auth (string): either "user" or "service" to make the BigQuery call.
-    api_call (dict): the JSON for the API call as defined in recipe.
-    errors (dict): defines where the data will be written
-
-  Returns (dict):
-    A modified results JSON with additional API values added.
-
-  Raises:
-    ValueError: If a required key in the recipe is missing.
-  """
-
-  if 'bigquery' in errors:
-    errors['bigquery']['schema'] = ERROR_SCHEMA
-    errors['bigquery']['format'] = 'JSON'
-    errors['bigquery']['skip_rows'] = 0
-    errors['bigquery']['disposition'] = 'WRITE_TRUNCATE'
-
-    BigQuery(
-      config,
-      errors['bigquery'].get('auth', auth)
-    ).table_create(
-      config.project,
-      errors['bigquery']['dataset'],
-      errors['bigquery']['table'],
-      errors['bigquery']['schema'],
-      overwrite=False
-    )
-
-  return errors
 
 
 def google_api_append(schema, values, rows):
@@ -259,7 +209,7 @@ def google_api_append(schema, values, rows):
     yield row
 
 
-def google_api_execute(config, auth, api_call, results, errors, append=None):
+def google_api_execute(config, auth, api_call, results, append=None):
   """Execute the actual API call and write to the end points defined.
 
   The API call is completely defined at this point.
@@ -269,7 +219,6 @@ def google_api_execute(config, auth, api_call, results, errors, append=None):
     auth (string): either "user" or "service" to make the API call.
     api_call (dict): the JSON for the API call as defined in recipe.
     results (dict): defines where the data will be written
-    errors (dict): defines where the errors will be written
     append (dict): optional parameters to append to each row, given as BQ schema
 
   Returns (dict):
@@ -279,47 +228,27 @@ def google_api_execute(config, auth, api_call, results, errors, append=None):
     ValueError: If a required key in the recipe is missing.
   """
 
-  try:
-    rows = API(config, api_call).execute()
+  rows = API(config, api_call).execute()
 
-    if results:
-      # check if single object needs conversion to rows
-      if isinstance(rows, dict):
-        rows = [rows]
+  if results:
+    # check if single object needs conversion to rows
+    if isinstance(rows, dict):
+      rows = [rows]
 
-      # check if simple string API results
-      elif results.get('bigquery', {}).get('format', 'JSON') == 'CSV':
-        rows = [[r] for r in rows]
+    # check if simple string API results
+    elif results.get('bigquery', {}).get('format', 'JSON') == 'CSV':
+      rows = [[r] for r in rows]
 
-      if config.verbose:
-        print('.', end='', flush=True)
+    if config.verbose:
+      print('.', end='', flush=True)
 
-      if append:
-        rows = google_api_append(append, api_call['kwargs'], rows)
+    if append:
+      rows = google_api_append(append, api_call['kwargs'], rows)
 
-      yield from map(lambda r: Discovery_To_BigQuery.clean(r), rows)
-
-  except HttpError as e:
-
-    if errors:
-      rows = [{
-          'Error':
-              str(e),
-          'Parameters': [{
-              'Key': k,
-              'Value': str(v)
-          } for k, v in api_call['kwargs'].items()]
-      }]
-      put_rows(config, auth, errors, rows)
-
-      if 'bigquery' in errors:
-        errors['bigquery']['disposition'] = 'WRITE_APPEND'
-
-    else:
-      raise e
+    yield from map(lambda r: Discovery_To_BigQuery.clean(r), rows)
 
 
-def google_api(config, task):
+def google_api(config, log, task):
   """Task handler for recipe, delegates all JSON parameters to functions.
 
   Executes the following steps:
@@ -364,21 +293,15 @@ def google_api(config, task):
     'headers': task.get('headers'),
   }
 
-  append = task.get('append')
-
-  results = google_api_build_results(
+  result_table = google_api_build_results(
     config,
     task['auth'],
     api_call,
     task.get('results', {})
   )
 
-  errors = google_api_build_errors(
-    config,
-    task['auth'],
-    api_call,
-    task.get('errors', {})
-  )
+  if task.get('append'):
+    result_table['bigquery']['schema'].extend(task.get('append'))
 
   # get parameters from JSON
   if 'kwargs' in task:
@@ -404,14 +327,43 @@ def google_api(config, task):
     for kwargs in kwargs_list:
       api_call['kwargs'] = kwargs
       google_api_initilaize(config, api_call, task.get('alias'))
-      yield from google_api_execute(config, task['auth'], api_call, results, errors, append)
 
-  if append:
-    results['bigquery']['schema'].extend(append)
-
-  return put_rows(
+      try:
+        yield from google_api_execute(
+          config,
+          task['auth'],
+          api_call,
+          result_table,
+          task.get('append')
+        )
+    
+        log.write(
+          'OK',
+          task.get('description', '{}.{}.{}@{}'.format(
+            task['api'],
+            task['version'],
+            task['function'],
+            task['auth']
+          )),
+          [{'Key': k, 'Value': str(v) } for k, v in api_call['kwargs'].items()]
+        )
+      except HttpError as e:
+        log.write(
+          'ERROR',
+          task.get('description', '{}.{}.{}@{}'.format(
+            task['api'],
+            task['version'],
+            task['function'],
+            task['auth']
+          )),
+          [{'Key': k, 'Value': str(v) } for k, v in api_call['kwargs'].items()]
+        )
+    
+  results = put_rows(
     config,
     task['auth'],
-    results,
+    result_table, # may have its own auth
     google_api_combine()
   )
+
+  return results

@@ -24,6 +24,7 @@ import textwrap
 import importlib
 
 from util.configuration import Configuration
+from util.log import Log
 from util.drive import Drive
 from util.google_api import API_Drive
 
@@ -85,7 +86,7 @@ def is_scheduled(configuration, task={}):
   return False
 
 
-def execute(configuration, tasks, force=False, instance=None):
+def execute(configuration, workflow, force=False, instance=None):
   """Run all the tasks in a project in one sequence.
 
   Imports and calls each task handler specified in the recpie.
@@ -97,7 +98,7 @@ def execute(configuration, tasks, force=False, instance=None):
     from util.configuration import Configuration
 
     if __name__ == "__main__":
-      TASKS = [
+      WORKFLOW = { "tasks":[
         { "hello":{
           "auth":"user",
           "say":"Hello World"
@@ -106,7 +107,7 @@ def execute(configuration, tasks, force=False, instance=None):
           "auth":"service",
           "dataset":"Test_Dataset"
         }}
-      ]
+      ]}
 
       execute(
         config=Configuration(
@@ -116,14 +117,14 @@ def execute(configuration, tasks, force=False, instance=None):
           project='[GOOGLE CLOUD PROJECT ID]',
           verbose=True
         ),
-        tasks=TASKS,
+        workflow=WORKFLOW,
         force=True
       )
   ```
 
   Args:
     * configuration: (class) Crednetials wrapper.
-    * tasks: (dict) JSON definition of each handler and its parameters.
+    * workflow: (dict) JSON definition of each handler and its parameters.
     * force: (bool) Ignore any schedule settings if true, false by default.
     * instance (int) Sequential index of task to execute (one based index).
 
@@ -134,7 +135,9 @@ def execute(configuration, tasks, force=False, instance=None):
     All possible exceptions that may occur in a workflow.
   """
 
-  for sequence, task in enumerate(tasks):
+  log = Log(configuration, workflow.get('log'))
+
+  for sequence, task in enumerate(workflow['tasks']):
     script, task = next(iter(task.items()))
 
     if instance and instance != sequence + 1:
@@ -148,7 +151,7 @@ def execute(configuration, tasks, force=False, instance=None):
         importlib.import_module('task.%s' % script),
         script
       )
-      python_callable(configuration, task)
+      python_callable(configuration, log, task)
     else:
       print(
         'Schedule Skipping: add --force to ignore schedule'
@@ -254,13 +257,13 @@ def main():
   args = parser.parse_args()
 
   configuration = Configuration(
-    args.project,
-    args.service,
-    args.client,
-    args.user,
-    args.key,
-    args.timezone,
-    args.verbose
+    project=args.project,
+    service=args.service,
+    client=args.client,
+    user=args.user,
+    key=args.key,
+    timezone=args.timezone,
+    verbose=args.verbose
   )
 
   if args.workflow.startswith(GOOGLE_DRIVE_PREFIX):
@@ -273,7 +276,7 @@ def main():
   else:
     workflow = get_workflow(filepath=args.workflow)
 
-  execute(configuration, workflow['tasks'], args.force, args.task)
+  execute(configuration, workflow, args.force, args.task)
 
 
 if __name__ == '__main__':

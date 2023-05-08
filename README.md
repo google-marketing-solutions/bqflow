@@ -147,6 +147,19 @@ when handling credentials.
   1. For [User](https://developers.google.com/workspace/guides/create-credentials#oauth-client-id)
      * Run `python3 bqflow/bqflow/auth.py -h` and follow instructions.
 
+# Logs
+
+  1. **For debugging** add the --verbose or -v parameter to any of the commands.
+  2. **For production** add a log configuration to each workflow file. Change to __WRITE_TRUNCATE__ to replace the log file each time
+     ```
+     {
+       "log":{ "bigquery":{ "auth":"service", "dataset":"some_dataset", "table":"BQFlow_Log", "disposition":"WRITE_APPEND" }},
+       "tasks":[...]
+     }
+     ```
+     Logs are written after each workflow completes.  The log table can be included in queries to ensure dashboards or API calls are up to date.
+
+
 # FAQ
 
 **Why does this exist?**

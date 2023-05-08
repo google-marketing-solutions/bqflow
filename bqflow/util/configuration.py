@@ -45,28 +45,9 @@ three important concepts:
        --client / -c = client credentials path (requires user credentials path)
        --service / -s = service credentials path
 
-    B. Define credentials paths in JSON (overruled by command line)
-       In each json file create the following entry (client, or user, or
-       service)
+    B. Use default credentials, these must be specified for security reasons:
+       --service / -s = "DEFAULT"
 
-         ```
-         {
-           "setup":{
-             "id":"[cloud project id]",
-             "auth":{
-               "client":"[/home/.credentials/hello-world_client.json]",
-               "service":"[/home/.credentials/hello-world_service.json]",
-               "user":"[/home/.credentials/hello-world_user.json]"
-             }
-          },
-         }
-         ```
-
-    C. Use default credentials ( lowest priority, last resort )
-       If neither the json not the command line provides a path, the
-       environmental variable GOOGLE_APPLICATION_CREDENTIALS will be
-       used for service accounts.  It is created by google cloud
-       utilities.
 """
 
 import os
@@ -80,7 +61,6 @@ try:
 except:
   from pytz import timezone as ZoneInfo
 
-
 class Configuration():
 
   def __init__(
@@ -91,20 +71,18 @@ class Configuration():
     user=None,
     key=None,
     timezone='America/Los_Angeles',
-    verbose=False,
+    verbose=False
   ):
     """Used in BQFlow scripts as programmatic entry point.
 
     Args:
-      * workflow: (dict) JSON object representing the recipe
       * project: (string) See module description.
-      * user: (string) See module description.
       * service: (string) See module description.
       * client: (string) See module description.
+      * user: (string) See module description.
       * key: (string) See module description.
       * verbose: (boolean) See module description.
-      * trace_print: (boolean) True if writing execution trace to stdout.
-      * trace_file: (boolean) True if writing execution trace to file.
+      * timezone: (string) See module description.
       * args: (dict) dictionary of arguments (used with argParse).
 
     Returns:
@@ -138,4 +116,3 @@ class Configuration():
     h = hashlib.sha256()
     h.update(json.dumps(self.project).encode())
     return h.hexdigest()
-

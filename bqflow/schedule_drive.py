@@ -58,7 +58,7 @@ class DriveRunner():
     for file in files:
       print('{} Starting: {}'.format(multiprocessing.current_process().name, file))
       workflow = get_workflow(filecontent=API_Drive(self.config, self.auth).files().get_media(fileId=file).execute().decode())
-      execute(self.config, workflow['tasks'], force=False, instance=None)
+      execute(self.config, workflow, force=False, instance=None)
 
 
   def execute_workflows(self, drive_path: str) -> None:
@@ -177,13 +177,13 @@ if __name__ == '__main__':
   args = parser.parse_args()
 
   configuration = Configuration(
-    args.project,
-    args.service,
-    args.client,
-    args.user,
-    args.key,
-    args.timezone,
-    args.verbose
+    project=args.project,
+    service=args.service,
+    client=args.client,
+    user=args.user,
+    key=args.key,
+    timezone=args.timezone,
+    verbose=args.verbose
   )
 
   DriveRunner(

@@ -26,7 +26,7 @@ from util.data import put_rows
 from util.ga_api import GA_Report
 
 
-def ga_report(config, task):
+def ga_report(config, log, task):
   if config.verbose:
     print('GA')
 

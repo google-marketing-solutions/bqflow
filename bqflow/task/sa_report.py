@@ -26,7 +26,7 @@ from util.data import put_rows
 from util.sa_api import SA_Report
 
 
-def sa_report(config, task):
+def sa_report(config, log, task):
   if config.verbose:
     print('SA')
 

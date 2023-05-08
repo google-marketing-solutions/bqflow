@@ -18,7 +18,7 @@
 
 from util.bigquery_api import BigQuery
 
-def dataset(config, task):
+def dataset(config, log, task):
 
   if config.verbose:
     print('DATASET', config.project, task['dataset'])

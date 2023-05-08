@@ -54,13 +54,18 @@ def main():
         B. Find your newly created key under OAuth 2.0 Client IDs and click download arrow on the right."
         C. The downloaded file is the CLIENT credentials, use its path for the --client -c parameter.
 
-      Step 4: Generate USER Credentials File ( do only once )"
+      Step 4: Run Auth Workflow To Get User Credentials File ( do only once )"
       ----------------------------------------"
-        A. Run this command with parameters -c [CLIENT file path] and -u [USER file path].
-        B. The USER file will be created and can be used to access Google APIs.
+        A. Run this command with parameters, see Examples below.
+        B. The user.json file will be created and can be used to access Google APIs.
         C. The user profile will be printed to the screen.
 
-        Example: python bqflow/bqflow/auth.py -c [CLIENT file path] -u [USER file path]
+        Note:
+          DOES NOT WORK IN A VM because of the Google Authentication Flow, do this from your local machine.
+
+        Examples: 
+          python bqflow/bqflow/auth.py -c [CLIENT file path, you have this] -u [USER file path, file will be created]
+          python bqflow/bqflow/auth.py -c client.json  and -u user.json
 
         All scopes are controlled by: bqflow/bqflow/config.py
 

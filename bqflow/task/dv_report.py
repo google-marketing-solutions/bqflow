@@ -37,7 +37,7 @@ from util.data import put_rows
 from util.dv_api import report_delete, report_filter, report_build, report_file, report_to_rows, report_clean, report_run
 
 
-def dv_report(config, task):
+def dv_report(config, log, task):
   if config.verbose:
     print('DBM')
 
