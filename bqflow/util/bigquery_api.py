@@ -414,7 +414,7 @@ class BigQuery():
       body=body
     ).execute()
 
-    if response is None and replace:
+    if self.job is None and replace:
       return API_BigQuery(self.config, self.auth).tables().update(
         projectId=self.config.project,
         datasetId=dataset_id,
