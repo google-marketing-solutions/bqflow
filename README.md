@@ -23,7 +23,7 @@ our team specifically uses this for:
   1. [Campaign Manager](https://developers.google.com/doubleclick-advertisers/rel_notes)
   1. [Search Ads](https://developers.google.com/search-ads/v2/reference)
   1. [YouTube](https://developers.google.com/youtube/v3/docs)
-  1. [Google Analutics](https://developers.google.com/analytics/devguides/reporting/core/v4/rest)
+  1. [Google Analytics](https://developers.google.com/analytics/devguides/reporting/core/v4/rest)
 
 See the [Wiki](../../wiki) for how to call each. In addition reporting data helpers exist for:
 
