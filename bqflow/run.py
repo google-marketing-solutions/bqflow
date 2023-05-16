@@ -63,7 +63,53 @@ def get_workflow(filepath=None, filecontent=None):
         raise
 
 
-def is_scheduled(configuration, task={}):
+def auth_workflow(config, workflow):
+  """Adjust the "auth":"user|service" parameter based on provided credentials.
+
+     Ideally the provided credentials should match the workflow credentials,
+     however, when they do not use whatever is provided and hope for the best.
+
+     Time saver, prevents recoding the workflow when using only one credential.
+     Also enables remote debugging recipes from drive using different credentials.
+
+     If both or no credentials are provided the workflow is unmodified.
+
+    Args:
+      * config: (class) Crednetials wrapper.
+      * workflow: (Recipe JSON) The JSON of a workflow.
+
+    Returns:
+      Modified workflow with "auth" fields recursively updated.
+  """
+
+  def _auth_workflow(auth, workflow):
+    """Recusrsively finds auth in workflow and sets them.
+
+      Args:
+        * auth: (string) Either 'service' or 'user'.
+        * workflow: (Recipe JSON) The JSON of a workflow.
+
+      Returns:
+        Modified workflow with "auth" fields recursively updated.
+    """
+
+    if isinstance(workflow, dict):
+      if 'auth' in workflow:
+        workflow['auth'] = auth
+      for key, value in workflow.items():
+        _auth_workflow(auth, value)
+    elif isinstance(workflow, (list, tuple)):
+      for value in workflow:
+        _auth_workflow(auth, value)
+
+  if config.auth_options() == 'SERVICE':
+    _auth_workflow('service', workflow)
+
+  elif config.auth_options() == 'USER':
+    _auth_workflow('user', workflow)
+
+
+def is_scheduled(config, task={}):
   """Wrapper for day_hour_scheduled that returns True if current time zone safe hour is in workflow schedule.
 
      Used as a helper for any cron job running projects.  Keeping this logic in
@@ -79,14 +125,14 @@ def is_scheduled(configuration, task={}):
       - True if task is scheduled to run current hour, else False.
   """
 
-  if configuration.days == [] or configuration.date.strftime('%a') in configuration.days:
-    if configuration.hours == [] or configuration.hour in configuration.hours:
+  if config.days == [] or config.date.strftime('%a') in config.days:
+    if config.hours == [] or config.hour in config.hours:
       return True
 
   return False
 
 
-def execute(configuration, workflow, force=False, instance=None):
+def execute(config, workflow, force=False, instance=None):
   """Run all the tasks in a project in one sequence.
 
   Imports and calls each task handler specified in the recpie.
@@ -123,7 +169,7 @@ def execute(configuration, workflow, force=False, instance=None):
   ```
 
   Args:
-    * configuration: (class) Crednetials wrapper.
+    * config: (class) Crednetials wrapper.
     * workflow: (dict) JSON definition of each handler and its parameters.
     * force: (bool) Ignore any schedule settings if true, false by default.
     * instance (int) Sequential index of task to execute (one based index).
@@ -135,7 +181,9 @@ def execute(configuration, workflow, force=False, instance=None):
     All possible exceptions that may occur in a workflow.
   """
 
-  log = Log(configuration, workflow.get('log'))
+  auth_workflow(config, workflow)   
+
+  log = Log(config, workflow.get('log'))
 
   for sequence, task in enumerate(workflow['tasks']):
     script, task = next(iter(task.items()))
@@ -146,12 +194,13 @@ def execute(configuration, workflow, force=False, instance=None):
     else:
       print('RUNNING TASK #%d: %s - %s' % (sequence + 1, script, task.get('description', '')))
 
-    if force or is_scheduled(configuration, task):
+    if force or is_scheduled(config, task):
       python_callable = getattr(
         importlib.import_module('task.%s' % script),
         script
       )
-      python_callable(configuration, log, task)
+      task['sequence'] = sequence
+      python_callable(config, log, task)
     else:
       print(
         'Schedule Skipping: add --force to ignore schedule'
@@ -256,7 +305,7 @@ def main():
 
   args = parser.parse_args()
 
-  configuration = Configuration(
+  config = Configuration(
     project=args.project,
     service=args.service,
     client=args.client,
@@ -268,15 +317,15 @@ def main():
 
   if args.workflow.startswith(GOOGLE_DRIVE_PREFIX):
     auth = 'user' if args.user else 'service'
-    file_id = Drive(configuration, auth).file_id(args.workflow)
+    file_id = Drive(config, auth).file_id(args.workflow)
     if file_id is None:
       raise FileNotFoundError('Cound not parse Google Drive link, please use the link copy feature to get the URL.')
-    file_content = API_Drive(configuration, auth).files().get_media(fileId=file_id).execute().decode()
+    file_content = API_Drive(config, auth).files().get_media(fileId=file_id).execute().decode()
     workflow = get_workflow(filecontent=file_content)
   else:
     workflow = get_workflow(filepath=args.workflow)
 
-  execute(configuration, workflow, args.force, args.task)
+  execute(config, workflow, args.force, args.task)
 
 
 if __name__ == '__main__':

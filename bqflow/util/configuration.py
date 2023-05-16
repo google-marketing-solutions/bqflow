@@ -109,6 +109,17 @@ class Configuration():
       print('HOUR:', self.now.hour)
 
 
+  def auth_options(self):
+    if self.user and self.service:
+      return 'BOTH'
+    elif self.user:
+      return 'USER'
+    elif self.service:
+      return 'SERVICE'
+    else:
+      return 'NONE'
+
+
   def fingerprint(self):
     """Provide value that can be used as a cache key.
     """

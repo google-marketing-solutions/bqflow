@@ -50,6 +50,9 @@ def CredentialsFlowWrapper(client, credentials_only=False, **kwargs):
   elif RE_CREDENTIALS_JSON.match(client):
     client_json = json.loads(client)
   else:
+    if not client:
+      raise AttributeError('Workflow requires user credentials, specify the -c and/or -u parameter.') 
+
     with open(client, 'r') as json_file:
       client_json = json.load(json_file)
 
@@ -67,7 +70,10 @@ def CredentialsFlowWrapper(client, credentials_only=False, **kwargs):
 
 
 def CredentialsServiceWrapper(service):
-  if isinstance(service, dict):
+  if not service:
+    raise AttributeError('Workflow requires service credentials, specify the -s parameter.') 
+
+  elif isinstance(service, dict):
     return CredentialsService.from_service_account_info(service)
   elif service == 'DEFAULT':
     credentials, ignore = google.auth.default()
