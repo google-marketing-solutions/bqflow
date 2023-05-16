@@ -348,13 +348,15 @@ def google_api(config, log, task):
           [{'Key': k, 'Value': str(v) } for k, v in api_call['kwargs'].items()]
         )
       except HttpError as e:
+        raise
         log.write(
           'ERROR',
-          task.get('description', '{}.{}.{}@{}'.format(
+          task.get('description', '{}.{}.{}@{} {}'.format(
             task['api'],
             task['version'],
             task['function'],
-            task['auth']
+            task['auth'],
+            str(e)
           )),
           [{'Key': k, 'Value': str(v) } for k, v in api_call['kwargs'].items()]
         )
