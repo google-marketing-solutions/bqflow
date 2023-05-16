@@ -90,6 +90,8 @@ Example Write Insertion Orders into DV360 from BigQuery:
     }}
 """
 
+import traceback
+
 from googleapiclient.errors import HttpError
 
 from util.bigquery_api import BigQuery
@@ -359,6 +361,8 @@ def google_api(config, log, task):
           )),
           [{'Key': k, 'Value': str(v) } for k, v in api_call['kwargs'].items()]
         )
+        if config.verbose:
+          traceback.print_exc()
     
   results = put_rows(
     config,
