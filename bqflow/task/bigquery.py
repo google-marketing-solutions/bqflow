@@ -33,9 +33,8 @@ Includes:
 
 from util.bigquery_api import BigQuery
 from util.bigquery_api import query_parameters
-from util import csv
 from util import data
-from util.sheets_api import sheets_clear, sheets_write
+
 
 def bigquery_run(config, task):
   """Execute a query without expected return results."""
@@ -43,131 +42,98 @@ def bigquery_run(config, task):
   if config.verbose:
     print('RUN QUERY', task['run']['query'])
 
-  BigQuery(config, task['auth']).run_query(
-    config.project,
-    query_parameters(
+  BigQuery(config, task['auth']).query_run(
+    project_id = config.project,
+    query = query_parameters(
       task['run']['query'],
       task['run'].get('parameters')
     ),
-    task['run'].get('legacy', False)
+    legacy = task['run'].get('legacy', False)
   )
 
 
 def bigquery_values(config, task):
-  """Write explicit values to a table.
-
-  TODO: Replace with get_rows.
-  """
+  """Write explicit values to a table."""
 
   if config.verbose:
     print('VALUES', task['from']['values'])
 
-  rows = data.get_rows(config, task['auth'], task['from'])
   BigQuery(config, task['auth']).rows_to_table(
-    config.project,
-    task['to']['dataset'],
-    task['to']['table'],
-    rows,
-    task.get('schema', []),
-    0
+    project_id = config.project,
+    dataset_id = task['to']['dataset'],
+    table_id = task['to']['table'],
+    rows = data.get_rows(config, task['auth'], task['from'])
+    schema = task.get('schema', []),
+    skip_rows = 0
   )
 
 
-def bigquery_query(config, task):
-  """Execute a query and write results to table.
+def bigquery_query_to_table(config, task):
+  """Execute a query and write results to table."""
 
-  TODO: Replace with get_rows and put_rows combination.
-  """
+  if config.verbose:
+    print('QUERY TO TABLE', task['to']['table'])
 
-  if 'table' in task['to']:
-    if config.verbose:
-      print('QUERY TO TABLE', task['to']['table'])
+  BigQuery(config, task['auth']).query_to_table(
+    config.project,
+    task['to']['dataset'],
+    task['to']['table'],
+    query_parameters(
+      task['from']['query'],
+      task['from'].get('parameters')
+    ),
+    disposition=task.get('write_disposition', 'WRITE_TRUNCATE'),
+    legacy=task['from'].get('legacy', False)
+  ))
 
-    BigQuery(config, task['auth']).query_to_table(
-      config.project,
-      task['to']['dataset'],
-      task['to']['table'],
-      query_parameters(
-        task['from']['query'],
-        task['from'].get('parameters')
-      ),
-      disposition=task['write_disposition']
-        if 'write_disposition' in task
-        else 'WRITE_TRUNCATE',
-      legacy=task['from'].get(
-        'legacy',
-        task['from'].get('useLegacySql', False)
-      )  # DEPRECATED: useLegacySql
-    )
 
-  elif 'sheet' in task['to']:
-    if config.verbose:
-      print('QUERY TO SHEET', task['to']['sheet'])
+def bigquery_query_to_table(config, task):
+  """Execute a query and write results to sheet."""
 
-    rows = BigQuery(config, task['auth']).query_to_rows(
-      config.project,
-      task['from']['dataset'],
-      query_parameters(
-        task['from']['query'],
-        task['from'].get('parameters')
-      ),
-      legacy=task['from'].get('legacy', False)
-    )
+  if config.verbose:
+    print('QUERY TO SHEET', task['to']['sheet'])
 
-    # makes sure types are correct in sheet
-    rows = csv.rows_to_type(rows)
+  rows = BigQuery(config, task['auth']).query_to_rows(
+    config.project,
+    task['from']['dataset'],
+    query_parameters(
+      task['from']['query'],
+      task['from'].get('parameters')
+    ),
+    legacy=task['from'].get('legacy', False)
+  )
 
-    sheets_clear(
-      config,
-      task['to'].get('auth', task['auth']),
-      task['to']['sheet'],
-      task['to']['tab'],
-      task['to'].get('range', 'A2')
-    )
-    sheets_write(
-      config,
-      task['to'].get('auth', task['auth']),
-      task['to']['sheet'],
-      task['to']['tab'],
-      task['to'].get('range', 'A2'),
-      rows
-    )
+  put_rows(
+    config=config,
+    auth=auth,
+    destination = { 'sheets': {
+      'auth':task['to'].get('auth', auth),
+      'sheet':task['to']['sheet'],
+      'tab':task['to']['tab'],
+      'range':task['to'].get('range', 'A2')
+      'delete':task['to'].get('delete', False)
+    }},
+    rows = rows
+  )
 
-  elif 'sftp' in task['to']:
-    if config.verbose:
-      print('QUERY TO SFTP')
 
-    rows = BigQuery(config, task['auth']).query_to_rows(
-      config.project,
-      task['from']['dataset'],
-      query_parameters(
-        task['from']['query'],
-        task['from'].get('parameters')
-      ),
-      legacy=task['from'].get('use_legacy_sql', False)
-    )
+def bigquery_query_to_view(config, task):
+  """Execute a query and write results to view."""
 
-    if rows:
-      data.put_rows(config, task['auth'], task['to'], rows)
+  if config.verbose:
+    print('QUERY TO VIEW', task['to']['view'])
 
-  else:
-    if config.verbose:
-      print('QUERY TO VIEW', task['to']['view'])
-
-    BigQuery(config, task['auth']).query_to_view(
-      config.project,
-      task['to']['dataset'],
-      task['to']['view'],
-      query_parameters(
-        task['from']['query'],
-        task['from'].get('parameters')
-      ),
-      task['from'].get(
-        'legacy',
-        task['from'].get('useLegacySql', False)
-      ),  # DEPRECATED: useLegacySql
-      task['to'].get('replace', False)
-    )
+  BigQuery(config, task['auth']).query_to_view(
+    config.project,
+    task['to']['dataset'],
+    task['to']['view'],
+    query_parameters(
+      task['from']['query'],
+      task['from'].get('parameters')
+    ),
+    task['from'].get('legacy', False),
+    task['to'].get('replace', False)
+  )
 
 
 def bigquery_storage(config, task):
@@ -189,12 +155,19 @@ def bigquery_storage(config, task):
 
 def bigquery(config, log, task):
 
-  if 'run' in task and 'query' in task.get('run', {}):
+  if 'run' in task:
     bigquery_run(config, task)
   elif 'values' in task['from']:
     bigquery_values(config, task)
   elif 'query' in task['from']:
-    bigquery_query(config, task)
+    if 'table' in task['to']:
+      bigquery_query_to_table(config, task)
+    elif 'view' in task['to']:
+      bigquery_query_to_view(config, task)
+    elif 'sheet' in task['to']:
+      bigquery_query_to_sheet(config, task)
+    else:
+      raise NotImplementedError('The bigquery task has no such handler.')
   elif 'bucket' in task['from']:
     bigquery_query(config, task)
   else:

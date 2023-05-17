@@ -165,7 +165,7 @@ def get_rows(config, auth, source, as_object=False, unnest=False):
         yield row[0] if not as_object and unnest else row
 
 
-def put_rows(config, auth, destination, rows, schema=None, variant=''):
+def put_rows(config, auth, destination, rows):
   """Processes standard write JSON block for dynamic export of data.
 
   Allows us to quickly write the results of a script to a destination.  For
@@ -190,6 +190,7 @@ def put_rows(config, auth, destination, rows, schema=None, variant=''):
           "schema": [ json - standard bigquery schema json ],
           "header": [ boolean - true if header exists in rows ]
           "disposition": [ string - same as BigQuery documentation ]
+          "merge": [ string list - columns to maintain uniqueness on ]
         },
         "sheets":{
           "auth":"[ user or service ]",
@@ -216,8 +217,7 @@ def put_rows(config, auth, destination, rows, schema=None, variant=''):
     rows: ( iterator ) The list of rows to be written, if NULL no action is performed.
     schema: (json) A bigquery schema definition.
     destination: (json) A json block resembling var_json described above. rows (
-      list ) The data being written as a list object. variant (string) Appended
-      to destination to differentieate multiple objects
+      list ) The data being written as a list object. 
 
   Returns:
     If unnest is False: Returns a list of row values [[v1], [v2], ... ]
@@ -231,43 +231,28 @@ def put_rows(config, auth, destination, rows, schema=None, variant=''):
 
   if 'bigquery' in destination:
 
-    if not schema:
-      schema = destination['bigquery'].get('schema')
+    table = destination['bigquery']['table']
+    if 'merge' in destination['bigquery']:
+      table += '_MERGE'
 
-    skip_rows = 1 if destination['bigquery'].get('header') and schema else 0
+    BigQuery(config, destination['bigquery'].get('auth', auth)).rows_to_table(
+      project_id = destination['bigquery'].get('project_id', config.project),
+      dataset_id = destination['bigquery']['dataset'],
+      table_id = table,
+      rows = rows,
+      source_format=destination['bigquery'].get('format', 'CSV') ,
+      schema = destination['bigquery'].get('schema'),
+      disposition = destination['bigquery'].get('disposition', 'WRITE_TRUNCATE'),
+      skip_rows = 1 if destination['bigquery'].get('header') and schema else 0
+    )
 
-    if destination['bigquery'].get('format', 'CSV') == 'JSON':
-      BigQuery(config, destination['bigquery'].get('auth', auth)).json_to_table(
-        destination['bigquery'].get('project_id', config.project),
-        destination['bigquery']['dataset'],
-        destination['bigquery']['table'] + variant,
-        rows,
-        schema,
-        destination['bigquery'].get('disposition', 'WRITE_TRUNCATE'),
-      )
-
-    elif destination['bigquery'].get('is_incremental_load', False) == True:
-      BigQuery(config, destination['bigquery'].get('auth', auth)).incremental_rows_to_table(
-        destination['bigquery'].get('project_id', config.project),
-        destination['bigquery']['dataset'],
-        destination['bigquery']['table'] + variant,
-        rows,
-        schema,
-        destination['bigquery'].get('skip_rows', skip_rows),
-        destination['bigquery'].get('disposition', 'WRITE_APPEND'),
-        billing_project_id=config.project
-      )
-
-    else:
-
-      BigQuery(config, destination['bigquery'].get('auth', auth)).rows_to_table(
-        destination['bigquery'].get('project_id', config.project),
-        destination['bigquery']['dataset'],
-        destination['bigquery']['table'] + variant,
-        rows,
-        schema,
-        destination['bigquery'].get('skip_rows', skip_rows),
-        destination['bigquery'].get('disposition', 'WRITE_TRUNCATE'),
+    if 'merge' in destination['bigquery']:
+      BigQuery(config, destination['bigquery'].get('auth', auth)).table_merge(
+        project_id = destination['bigquery'].get('project_id', config.project),
+        dataset_id = destination['bigquery']['dataset'],
+        source_table_id = table,
+        destination_table_id = destination['bigquery']['table'],
+        columns=destination['bigquery']['merge']
       )
 
   elif 'sheets' in destination:
@@ -276,7 +261,7 @@ def put_rows(config, auth, destination, rows, schema=None, variant=''):
         config,
         destination['sheets'].get('auth', auth),
         destination['sheets']['sheet'],
-        destination['sheets']['tab'] + variant,
+        destination['sheets']['tab'],
         destination['sheets']['range'],
       )
 
@@ -284,7 +269,7 @@ def put_rows(config, auth, destination, rows, schema=None, variant=''):
       config,
       destination['sheets'].get('auth', auth),
       destination['sheets']['sheet'],
-      destination['sheets']['tab'] + variant,
+      destination['sheets']['tab'],
       destination['sheets']['range'],
       rows_to_type(rows),
       destination['sheets'].get('append', False),
@@ -292,7 +277,7 @@ def put_rows(config, auth, destination, rows, schema=None, variant=''):
 
   elif 'file' in destination:
     path_out, file_ext = destination['file'].rsplit('.', 1)
-    file_out = path_out + variant + '.' + file_ext
+    file_out = path_out + '.' + file_ext
     if config.verbose:
       print('SAVING', file_out)
     makedirs_safe(parse_path(file_out))
@@ -309,8 +294,7 @@ def put_rows(config, auth, destination, rows, schema=None, variant=''):
     )
 
     # put the file
-    file_out = destination['storage']['bucket'] + ':' + destination['storage'][
-        'path'] + variant
+    file_out = destination['storage']['bucket'] + ':' + destination['storage']['path'] 
     if config.verbose:
       print('SAVING', file_out)
     object_put(config, auth, file_out, rows_to_csv(rows))

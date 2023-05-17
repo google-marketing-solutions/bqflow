@@ -177,7 +177,7 @@ def google_api_build_results(config, auth, api_call, results):
     if 'format' not in results['bigquery']:
       results['bigquery']['format'] = 'JSON'
 
-    results['bigquery']['skip_rows'] = 0
+    results['bigquery']['header'] = False
 
     BigQuery(
       config,
@@ -191,6 +191,8 @@ def google_api_build_results(config, auth, api_call, results):
       expiration_days=results['bigquery'].get('expiration_days')
     )
 
+  #print('SCHEMA', results['bigquery']['schema'])
+  #exit()
   return results
 
 

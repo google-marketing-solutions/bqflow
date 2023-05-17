@@ -339,16 +339,10 @@ class BigQuery():
       ).execute()
 
 
-  def run_query(self, project_id, query, legacy=True, dataset_id=None):
-
-    body = {'query': query, 'useLegacySql': legacy}
-
-    if dataset_id:
-      body['defaultDataset'] = {'datasetId': dataset_id}
-
+  def query_run(self, project_id, query, legacy=False):
     self.job = API_BigQuery(self.config, self.auth).jobs().query(
       projectId=project_id,
-      body=body
+      body={'query': query, 'useLegacySql': legacy}
     ).execute()
 
     self.job_wait()
@@ -484,11 +478,24 @@ class BigQuery():
     dataset_id,
     table_id,
     rows,
+    source_format='CSV',
     schema=[],
-    skip_rows=1,
     disposition='WRITE_TRUNCATE',
+    skip_rows=1,
     wait=True
   ):
+
+    # check if JSON format, use custom handler
+    if source_format == 'JSON':
+      return self.json_to_table(
+        project_id = project_id,
+        dataset_id = dataset_id,
+        table_id = table_id,
+        json_data = rows,
+        schema = schema,
+        disposition = disposition,
+        wait = wait
+      )
 
     if self.config.verbose:
       print('BIGQUERY ROWS TO TABLE: ', project_id, dataset_id, table_id)
@@ -685,90 +692,6 @@ class BigQuery():
       self.table_create(project_id, dataset_id, table_id, schema)
 
 
-  def incremental_rows_to_table(
-    self,
-    project_id,
-    dataset_id,
-    table_id,
-    rows,
-    schema=[],
-    skip_rows=1,
-    disposition='WRITE_APPEND',
-  ):
-
-    if self.config.verbose:
-      print('BIGQUERY INCREMENTAL ROWS TO TABLE: ', project_id, dataset_id,
-            table_id)
-
-    #load the data in rows to BQ into a temp table
-    table_id_temp = table_id + str(uuid.uuid4()).replace('-', '_')
-    self.rows_to_table(
-      project_id,
-      dataset_id,
-      table_id_temp,
-      rows,
-      schema,
-      skip_rows,
-      disposition
-    )
-
-    try:
-      #query the temp table to find the max and min date
-      start_date = self._get_min_date_from_table(
-        project_id,
-        dataset_id,
-        table_id_temp
-      )
-      end_date = self._get_max_date_from_table(
-        project_id,
-        dataset_id,
-        table_id_temp,
-      )
-
-      #check if master table exists: if not create it, if so clear old data
-      if not self.table_exists(project_id, dataset_id, table_id):
-        self.table_create(project_id, dataset_id, table_id)
-      else:
-        self._clear_data_in_date_range_from_table(
-          project_id,
-          dataset_id,
-          table_id,
-          start_date,
-          end_date,
-          billing_project_id=billing_project_id
-        )
-
-      #append temp table to master
-      query = ('SELECT * FROM `' + project_id + '.' + dataset_id + '.' +
-               table_id_temp + '` ')
-      self.query_to_table(
-        project_id,
-        dataset_id,
-        table_id,
-        query,
-        disposition,
-        False,
-        billing_project_id=billing_project_id
-      )
-
-      #delete temp table
-      self.drop_table(
-        project_id,
-        dataset_id,
-        table_id_temp,
-        billing_project_id=billing_project_id
-      )
-
-    except:
-      #delete temp table
-      self.drop_table(
-        project_id,
-        dataset_id,
-        table_id_temp,
-        billing_project_id=billing_project_id
-      )
-
-
   def table_create(
     self,
     project_id,
@@ -808,6 +731,54 @@ class BigQuery():
       datasetId=dataset_id,
       body=body
     ).execute()
+
+
+  def table_merge(
+    self,
+    project_id,
+    dataset_id,
+    source_table_id,
+    destination_table_id,
+    columns
+  ):
+  """Execute DML equivalent of REPLACE from one table to another.
+
+  The fields in the schema must be exactly the same in the same order.
+  This function is not atomic, it performs a delete then an insert.
+
+  Args:
+    * project_id - GCP project name.
+    * dataset_id - GCP Bigquery dataset name.
+    * source_table_id - Table to copy rows from.
+    * destination_table_id - Table to replace or insert rows into.
+    * columns - String or list of columns to use as merge keys.
+
+  Returns:
+    Nothing, the desitnation table will contain the new and updated rows.
+  """
+
+    if self.config.verbose:
+      print('BIGQUERY MERGE:', source_table_id, destination_table_id, columns)
+
+    if not isinstance(columns, (list, tuple)):
+      columns = columns.split(',')
+
+    query = 'MERGE {dataset}.{destination_table} AS D USING {dataset}.{source_table} AS S ON {columns}'.format(
+      dataset = dataset_id,
+      source_table = source_table_id,
+      destination_table = destination_table_id,
+      columns = ' AND '.join('D.{column}=S.{column}'.format(column=c) for c in columns)
+    )
+
+    self.query_run(
+      project_id = project_id,
+      query = query + ' WHEN MATCHED THEN DELETE'
+    )
+
+    self.query_run(
+      project_id = project_id,
+      query = query + ' WHEN NOT MATCHED THEN INSERT ROW'
+    )
 
 
   def table_get(self, project_id, dataset_id, table_id):

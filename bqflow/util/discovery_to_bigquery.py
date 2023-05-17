@@ -194,6 +194,8 @@ class Discovery_To_BigQuery():
     Recursively crawls the discovery document reference tree to build schema.
     Leverages recursion depth passed in constructor to stop if necessary.
 
+    Sort the keys to get consitent field order, important for BigQuery DML.
+
     Args:
       entry: a discovery document schema definition.
       parents: used to track recursion depth for a specific schema branch
@@ -204,7 +206,7 @@ class Discovery_To_BigQuery():
 
     bigquery_schema = []
 
-    for key, value in entry.items():
+    for key, value in sorted(entry.items()):
 
       # when the entry is { "type":"object", "someObject":{..} }, this ignores "type" artifact
       if not isinstance(value, dict): continue
@@ -287,6 +289,8 @@ class Discovery_To_BigQuery():
     Recursively crawls the discovery document reference tree to build document.
     Leverages recursion depth passed in constructor to stop if necessary.
 
+    Sort for consistency with to_schema.
+
     Args:
       from_api: the api schema to extrapolate
       from_json: new object with references replaced, not passed by caller
@@ -299,7 +303,7 @@ class Discovery_To_BigQuery():
     if from_api:
       from_json = deepcopy(from_api)
 
-    for key, value in from_json.items():
+    for key, value in sorted(from_json.items()):
 
       # when the entry is { "type":"object", "someObject":{..} }, this ignores "type" artifact
       if not isinstance(value, dict): continue
@@ -327,6 +331,8 @@ class Discovery_To_BigQuery():
     Recursively crawls the discovery document reference tree to build struct.
     Leverages recursion depth passed in constructor to stop if necessary.
 
+    Sort for consistency with to_schema.
+
     Args:
       from_api: the api schema to extrapolate
       from_json: new object with references replaced, not passed by caller
@@ -342,7 +348,7 @@ class Discovery_To_BigQuery():
     fields = []
     spaces = ' ' * indent
 
-    for key, value in from_json.items():
+    for key, value in sorted(from_json.items()):
 
       # when the entry is { "type":"object", "someObject":{..} }, this ignores "type" artifact
       if not isinstance(value, dict): continue

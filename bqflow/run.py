@@ -75,7 +75,7 @@ def auth_workflow(config, workflow):
      If both or no credentials are provided the workflow is unmodified.
 
     Args:
-      * config: (class) Crednetials wrapper.
+      * config: (class) Credentials wrapper.
       * workflow: (Recipe JSON) The JSON of a workflow.
 
     Returns:
@@ -83,7 +83,7 @@ def auth_workflow(config, workflow):
   """
 
   def _auth_workflow(auth, workflow):
-    """Recusrsively finds auth in workflow and sets them.
+    """Recursively finds auth in workflow and sets them.
 
       Args:
         * auth: (string) Either 'service' or 'user'.
@@ -169,7 +169,7 @@ def execute(config, workflow, force=False, instance=None):
   ```
 
   Args:
-    * config: (class) Crednetials wrapper.
+    * config: (class) Credentials wrapper.
     * workflow: (dict) JSON definition of each handler and its parameters.
     * force: (bool) Ignore any schedule settings if true, false by default.
     * instance (int) Sequential index of task to execute (one based index).
@@ -181,18 +181,18 @@ def execute(config, workflow, force=False, instance=None):
     All possible exceptions that may occur in a workflow.
   """
 
-  auth_workflow(config, workflow)   
+  auth_workflow(config, workflow)
 
   log = Log(config, workflow.get('log'))
 
-  for sequence, task in enumerate(workflow['tasks']):
+  for sequence, task in enumerate(workflow['tasks'], 1):
     script, task = next(iter(task.items()))
 
-    if instance and instance != sequence + 1:
-      print('SKIPPING TASK #%d: %s - %s' % (sequence + 1, script, task.get('description', '')))
+    if instance and instance != sequence:
+      print('SKIPPING TASK #%d: %s - %s' % (sequence, script, task.get('description', '')))
       continue
     else:
-      print('RUNNING TASK #%d: %s - %s' % (sequence + 1, script, task.get('description', '')))
+      print('RUNNING TASK #%d: %s - %s' % (sequence, script, task.get('description', '')))
 
     if force or is_scheduled(config, task):
       python_callable = getattr(
@@ -202,9 +202,7 @@ def execute(config, workflow, force=False, instance=None):
       task['sequence'] = sequence
       python_callable(config, log, task)
     else:
-      print(
-        'Schedule Skipping: add --force to ignore schedule'
-      )
+      print('Schedule Skipping: add --force to ignore schedule')
 
 
 def main():
