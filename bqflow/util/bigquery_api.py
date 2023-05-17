@@ -741,21 +741,21 @@ class BigQuery():
     destination_table_id,
     columns
   ):
-  """Execute DML equivalent of REPLACE from one table to another.
+    """Execute DML equivalent of REPLACE from one table to another.
 
-  The fields in the schema must be exactly the same in the same order.
-  This function is not atomic, it performs a delete then an insert.
+    The fields in the schema must be exactly the same in the same order.
+    This function is not atomic, it performs a delete then an insert.
 
-  Args:
-    * project_id - GCP project name.
-    * dataset_id - GCP Bigquery dataset name.
-    * source_table_id - Table to copy rows from.
-    * destination_table_id - Table to replace or insert rows into.
-    * columns - String or list of columns to use as merge keys.
+    Args:
+      * project_id - GCP project name.
+      * dataset_id - GCP Bigquery dataset name.
+      * source_table_id - Table to copy rows from.
+      * destination_table_id - Table to replace or insert rows into.
+      * columns - String or list of columns to use as merge keys.
 
-  Returns:
-    Nothing, the desitnation table will contain the new and updated rows.
-  """
+    Returns:
+      Nothing, the desitnation table will contain the new and updated rows.
+    """
 
     if self.config.verbose:
       print('BIGQUERY MERGE:', source_table_id, destination_table_id, columns)
