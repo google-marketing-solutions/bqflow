@@ -62,7 +62,7 @@ def bigquery_values(config, task):
     project_id = config.project,
     dataset_id = task['to']['dataset'],
     table_id = task['to']['table'],
-    rows = data.get_rows(config, task['auth'], task['from'])
+    rows = data.get_rows(config, task['auth'], task['from']),
     schema = task.get('schema', []),
     skip_rows = 0
   )
@@ -84,7 +84,7 @@ def bigquery_query_to_table(config, task):
     ),
     disposition=task.get('write_disposition', 'WRITE_TRUNCATE'),
     legacy=task['from'].get('legacy', False)
-  ))
+  )
 
 
 def bigquery_query_to_table(config, task):
@@ -110,7 +110,7 @@ def bigquery_query_to_table(config, task):
       'auth':task['to'].get('auth', auth),
       'sheet':task['to']['sheet'],
       'tab':task['to']['tab'],
-      'range':task['to'].get('range', 'A2')
+      'range':task['to'].get('range', 'A2'),
       'delete':task['to'].get('delete', False)
     }},
     rows = rows
