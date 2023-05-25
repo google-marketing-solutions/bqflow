@@ -424,8 +424,8 @@ class BigQuery():
     dataset_id,
     table_id,
     path,
-    schema=[],
-    skip_rows=1,
+    schema=None,
+    header=False,
     structure='CSV',
     disposition='WRITE_TRUNCATE',
     wait=True
@@ -459,7 +459,7 @@ class BigQuery():
 
     if structure == 'CSV':  # CSV, NEWLINE_DELIMITED_JSON
       body['configuration']['load']['sourceFormat'] = 'CSV'
-      body['configuration']['load']['skipLeadingRows'] = skip_rows
+      body['configuration']['load']['skipLeadingRows'] = 1 if header else 0
 
     self.job = API_BigQuery(self.config, self.auth).jobs().insert(
       projectId=self.config.project,
@@ -479,9 +479,9 @@ class BigQuery():
     table_id,
     rows,
     source_format='CSV',
-    schema=[],
+    schema=None,
     disposition='WRITE_TRUNCATE',
-    skip_rows=1,
+    header=False,
     wait=True
   ):
 
@@ -528,7 +528,7 @@ class BigQuery():
           buffer_data,
           'CSV',
           schema,
-          skip_rows,
+          header,
           disposition
         )
 
@@ -536,7 +536,7 @@ class BigQuery():
         buffer_data.seek(0)  #reset for write
         buffer_data.truncate()  # reset for write ( its needed for EOF marker )
         disposition = 'WRITE_APPEND'  # append all remaining records
-        skip_rows = 0
+        header = False
         has_rows = True
 
     # if no rows, clear table to simulate empty write
@@ -548,7 +548,7 @@ class BigQuery():
         buffer_data,
         'CSV',
         schema,
-        skip_rows,
+        header,
         disposition,
         wait
       )
@@ -620,7 +620,7 @@ class BigQuery():
     data_bytes,
     source_format='CSV',
     schema=None,
-    skip_rows=0,
+    header=False,
     disposition='WRITE_TRUNCATE',
     wait=True
   ):
@@ -663,7 +663,7 @@ class BigQuery():
         body['configuration']['load']['autodetect'] = False
 
       if source_format == 'CSV':
-        body['configuration']['load']['skipLeadingRows'] = skip_rows
+        body['configuration']['load']['skipLeadingRows'] = 1 if header else 0
 
       job = API_BigQuery(self.config, self.auth).jobs().insert(
         projectId=self.config.project,

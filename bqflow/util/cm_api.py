@@ -56,7 +56,6 @@ def get_profile_for_api(config, auth, account_id=None):
 
   """
 
-  profile_admin = None
   profile_network = None
 
   if account_id is not None:
@@ -66,19 +65,12 @@ def get_profile_for_api(config, auth, account_id=None):
     p_id = int(p['profileId'])
     a_id = int(p['accountId'])
 
-    # take the first profile for admin
-    if a_id == 2515 and 'subAccountId' not in p:
-      profile_admin = p_id
-      break
-
     # try to find first network profile if exists
     if profile_network is None and a_id == account_id:
       profile_network = p_id
 
-  if profile_admin:
-    return True, profile_admin
-  elif profile_network:
-    return False, profile_network
+  if profile_network:
+    return profile_network
   else:
     raise Exception('Add your user profile to DCM account %s.' % account_id)
 
@@ -99,10 +91,8 @@ def get_account_name(config, auth, account):
   """
 
   account_id, advertiser_ids = parse_account(config, auth, account)
-  is_superuser, profile_id = get_profile_for_api(config, auth, account_id)
-  response = API_DCM(
-      config, auth, internal=is_superuser).accounts().get(
-          id=account_id, profileId=profile_id).execute()
+  profile_id = get_profile_for_api(config, auth, account_id)
+  response = API_DCM(config, auth).accounts().get(id=account_id, profileId=profile_id).execute()
   return response['name']
 
 
@@ -147,10 +137,7 @@ def parse_account(config, auth, account):
   if network_id is not None:
     network_id = int(network_id)
   if advertiser_ids is not None:
-    advertiser_ids = [
-        int(advertiser_id.strip())
-        for advertiser_id in advertiser_ids.split(',')
-    ]
+    advertiser_ids = [int(advertiser_id.strip()) for advertiser_id in advertiser_ids.split(',')]
 
   return network_id, advertiser_ids
 
@@ -175,32 +162,21 @@ def report_get(config, auth, account, report_id=None, name=None):
   report = None
 
   account_id, advertiser_ids = parse_account(config, auth, account)
-  is_superuser, profile_id = get_profile_for_api(config, auth, account_id)
-  kwargs = {
-    'profileId': profile_id,
-    'accountId': account_id
-  } if is_superuser else {
-    'profileId': profile_id
-  }
+  profile_id = get_profile_for_api(config, auth, account_id)
 
   if name:
-    for r in API_DCM(
-      config,
-      auth,
-      iterate=True,
-      internal=is_superuser
-    ).reports().list(**kwargs).execute():
+    for r in API_DCM(config, auth, iterate=True).reports().list(
+      profileId = profile_id
+    ).execute():
       if r['name'] == name:
         report = r
         break
 
   elif report_id:
-    kwargs['reportId'] = report_id
-    report = API_DCM(
-      config,
-      auth,
-      internal=is_superuser
-    ).reports().get(**kwargs).execute()
+    report = API_DCM(config, auth).reports().get(
+      profileId = profile_id,
+      reportId = report_id
+    ).execute()
 
   return report
 
@@ -225,15 +201,11 @@ def report_delete(config, auth, account, report_id=None, name=None):
   report = report_get(config, auth, account, report_id, name)
   if report:
     account_id, advertiser_ids = parse_account(config, auth, account)
-    is_superuser, profile_id = get_profile_for_api(config, auth, account_id)
-    kwargs = {
-        'profileId': profile_id,
-        'accountId': account_id
-    } if is_superuser else {
-        'profileId': profile_id
-    }
-    kwargs['reportId'] = report['id']
-    API_DCM(config, auth, internal=is_superuser).reports().delete(**kwargs).execute()
+    profile_id = get_profile_for_api(config, auth, account_id)
+    API_DCM(config, auth).reports().delete(
+      profileId = profile_id,
+      reportId = report['id']
+    ).execute()
   else:
     if config.verbose:
       print('DCM DELETE: No Report')
@@ -281,22 +253,20 @@ def report_filter(config, auth, body, filters):
 
       # activities are specified in a unique part of the report json
       elif f == 'activity':
-        new_body['reachCriteria']['activities'].setdefault(
-            'filters', []).append({
-                'kind': 'dfareporting#dimensionValue',
-                'dimensionName': f,
-                'id': v
-            })
+        new_body['reachCriteria']['activities'].setdefault('filters', []).append({
+          'kind': 'dfareporting#dimensionValue',
+          'dimensionName': f,
+          'id': v
+        })
 
       # all other filters go in the same place
       else:
-        new_body.setdefault('criteria',
-                            {}).setdefault('dimensionFilters', []).append({
-                                'kind': 'dfareporting#dimensionValue',
-                                'dimensionName': f,
-                                'id': v,
-                                'matchType': 'EXACT'
-                            })
+        new_body.setdefault('criteria', {}).setdefault('dimensionFilters', []).append({
+          'kind': 'dfareporting#dimensionValue',
+          'dimensionName': f,
+          'id': v,
+          'matchType': 'EXACT'
+        })
 
   return new_body
 
@@ -327,7 +297,7 @@ def report_build(config, auth, account, body):
 
   if report is None:
     account_id, advertiser_ids = parse_account(config, auth, account)
-    is_superuser, profile_id = get_profile_for_api(config, auth, account_id)
+    profile_id = get_profile_for_api(config, auth, account_id)
 
     # add the account id to the body
     body['accountId'] = account_id
@@ -335,13 +305,12 @@ def report_build(config, auth, account, body):
 
     # add advertisers to the body, ignore for floodlight reports
     if advertiser_ids and 'criteria' in body:
-      body['criteria']['dimensionFilters'] = body.get('criteria', {}).get(
-          'dimensionFilters', []) + [{
-              'kind': 'dfareporting#dimensionValue',
-              'dimensionName': 'advertiser',
-              'id': advertiser_id,
-              'matchType': 'EXACT'
-          } for advertiser_id in advertiser_ids]
+      body['criteria']['dimensionFilters'] = body.get('criteria', {}).get('dimensionFilters', []) + [{
+        'kind': 'dfareporting#dimensionValue',
+        'dimensionName': 'advertiser',
+        'id': advertiser_id,
+        'matchType': 'EXACT'
+      } for advertiser_id in advertiser_ids]
 
     # add default daily schedule if it does not exist ( convenience )
     if 'schedule' not in body:
@@ -353,31 +322,21 @@ def report_build(config, auth, account, body):
 
     # add default start and end if it does not exist ( convenience )
     if 'expirationDate' not in body['schedule']:
-      body['schedule']['expirationDate'] = str(
-          (date.today() + timedelta(days=365)))
+      body['schedule']['expirationDate'] = str((date.today() + timedelta(days=365)))
 
     #pprint.PrettyPrinter().pprint(body)
 
     # create the report
-    kwargs = {
-        'profileId': profile_id,
-        'accountId': account_id
-    } if is_superuser else {
-        'profileId': profile_id
-    }
-    kwargs['body'] = body
-    report = API_DCM(
-        config, auth, internal=is_superuser).reports().insert(**kwargs).execute()
+    report = API_DCM(config, auth).reports().insert(
+      profileId = profile_id,
+      body = body
+    ).execute()
 
     # run the report
-    kwargs = {
-        'profileId': profile_id,
-        'accountId': account_id
-    } if is_superuser else {
-        'profileId': profile_id
-    }
-    kwargs['reportId'] = report['id']
-    API_DCM(config, auth, internal=is_superuser).reports().run(**kwargs).execute()
+    API_DCM(config, auth).reports().run(
+      profileId = profile_id,
+      reportId = report['id']
+    ).execute()
 
   else:
     if config.verbose:
@@ -484,13 +443,7 @@ def report_run(config, auth, account, report_id=None, name=None):
   """
 
   account_id, advertiser_id = parse_account(config, auth, account)
-  is_superuser, profile_id = get_profile_for_api(config, auth, account_id)
-  kwargs = {
-      'profileId': profile_id,
-      'accountId': account_id
-  } if is_superuser else {
-      'profileId': profile_id
-  }
+  profile_id = get_profile_for_api(config, auth, account_id)
 
   if config.verbose:
     print('DCM REPORT RUN INIT', report_id or name)
@@ -501,13 +454,6 @@ def report_run(config, auth, account, report_id=None, name=None):
     else:
       report_id = report['id']
 
-  kwargs = {
-      'profileId': profile_id,
-      'accountId': account_id
-  } if is_superuser else {
-      'profileId': profile_id
-  }
-  kwargs['reportId'] = report_id
 
   files = report_files(config, auth, account, report_id)
   latest_file_json = next(files, None)
@@ -515,7 +461,10 @@ def report_run(config, auth, account, report_id=None, name=None):
     # run report if previously never run or currently not running
     if config.verbose:
       print('RUNNING REPORT', report_id or name)
-    API_DCM(config, auth, internal=is_superuser).reports().run(**kwargs).execute()
+    API_DCM(config, auth).reports().run(
+      profileId = profile_id,
+      reportId = report_id
+    ).execute()
     return True
   if config.verbose:
     print('REPORT RUN SKIPPED', report_id or name)
@@ -562,23 +511,28 @@ def report_file(config, auth,
   elif file_json == True:
     return 'report_running.csv', None
   else:
-    filename = '%s_%s.csv' % (file_json['fileName'],
-                              file_json['dateRange']['endDate'].replace(
-                                  '-', ''))
+    filename = '%s_%s.csv' % (
+      file_json['fileName'],
+      file_json['dateRange']['endDate'].replace('-', '')
+    )
 
     # streaming
     if chunksize:
       return filename, media_download(
-          API_DCM(config, auth).files().get_media(
-              reportId=file_json['reportId'],
-              fileId=file_json['id']).execute(False), chunksize, 'utf-8')
+        API_DCM(config, auth).files().get_media(
+          reportId=file_json['reportId'],
+          fileId=file_json['id']
+        ).execute(False), chunksize, 'utf-8'
+      )
 
     # single object
     else:
       return filename, StringIO(
-          API_DCM(config, auth).files().get_media(
-              reportId=file_json['reportId'],
-              fileId=file_json['id']).execute().decode('utf-8'))
+        API_DCM(config, auth).files().get_media(
+          reportId=file_json['reportId'],
+          fileId=file_json['id']
+        ).execute().decode('utf-8')
+      )
 
 
 def report_list(config, auth, account):
@@ -597,19 +551,10 @@ def report_list(config, auth, account):
   """
 
   account_id, advertiser_id = parse_account(config, auth, account)
-  is_superuser, profile_id = get_profile_for_api(config, auth, account_id)
-  kwargs = {
-    'profileId': profile_id,
-    'accountId': account_id
-  } if is_superuser else {
-    'profileId': profile_id
-  }
-  for report in API_DCM(
-    config,
-    auth,
-    iterate=True,
-    internal=is_superuser
-  ).reports().list(**kwargs).execute():
+  profile_id = get_profile_for_api(config, auth, account_id)
+  for report in API_DCM(config, auth, iterate=True).reports().list(
+    profileId = profile_id
+  ).execute():
     yield report
 
 
@@ -630,20 +575,11 @@ def report_files(config, auth, account, report_id):
   """
 
   account_id, advertiser_id = parse_account(config, auth, account)
-  is_superuser, profile_id = get_profile_for_api(config, auth, account_id)
-  kwargs = {
-    'profileId': profile_id,
-    'accountId': account_id
-  } if is_superuser else {
-    'profileId': profile_id
-  }
-  kwargs['reportId'] = report_id
-  for report_file in API_DCM(
-    config,
-    auth,
-    iterate=True,
-    internal=is_superuser
-  ).reports().files().list(**kwargs).execute():
+  profile_id = get_profile_for_api(config, auth, account_id)
+  for report_file in API_DCM(config, auth, iterate=True).reports().files().list(
+    profileId = profile_id,
+    reportId = report_id
+  ).execute():
     yield report_file
 
 
@@ -795,11 +731,11 @@ def report_clean(rows):
     # not first row anymore
     first = False
 
+
 def profile_list(config, auth):
-	for profile in API_DCM(config,
-                    auth,
-                    iterate=True).userProfiles().list().execute():
-          yield profile
+  for profile in API_DCM(config, auth, iterate=True).userProfiles().list().execute():
+    yield profile
+
 
 def conversions_upload(config, auth,
                        account,
@@ -830,19 +766,12 @@ def conversions_upload(config, auth,
   """
 
   account_id, advertiser_id = parse_account(config, auth, account)
-  is_superuser, profile_id = get_profile_for_api(config, auth, account_id)
+  profile_id = get_profile_for_api(config, auth, account_id)
 
-  kwargs = {
-      'profileId': profile_id,
-      'accountId': account_id
-  } if is_superuser else {
-      'profileId': profile_id
-  }
-  kwargs['id'] = floodlight_activity_id
-  response = API_DCM(
-      config,
-      auth,
-      internal=is_superuser).floodlightActivities().get(**kwargs).execute()
+  response = API_DCM(config, auth).floodlightActivities().get(
+    profileId = profile_id,
+    id = floodlight_activity_id
+  ).execute()
 
   # upload in batch sizes of DCM_CONVERSION_SIZE
   row_count = 0
@@ -871,22 +800,16 @@ def conversions_upload(config, auth,
       if encryption_entity:
         body['encryptionInfo'] = encryption_entity
 
-      kwargs = {
-        'profileId': profile_id,
-        'accountId': account_id
-      } if is_superuser else {
-        'profileId': profile_id
-      }
-      kwargs['body'] = body
-
       if update:
-        results = API_DCM(
-            config, auth, internal=is_superuser).conversions().batchupdate(
-                **kwargs).execute()
+        results = API_DCM(config, auth).conversions().batchupdate(
+          profileId = profile_id,
+          body = body
+        ).execute()
       else:
-        results = API_DCM(
-            config, auth, internal=is_superuser).conversions().batchinsert(
-                **kwargs).execute()
+        results = API_DCM(config, auth).conversions().batchinsert(
+          profileId = profile_id,
+          body = body
+        ).execute()
 
       # stream back satus
       for status in results['status']:

@@ -114,11 +114,9 @@ def cm_report(config, log, task):
       rows = report_clean(rows)
 
       # if bigquery, remove header and determine schema
-      schema = None
       if 'bigquery' in task['out']:
-        schema = report_schema(next(rows))
-        task['out']['bigquery']['schema'] = schema
-        task['out']['bigquery']['skip_rows'] = 0
+        if 'schema' not in task['out']['bigquery']:
+          task['out']['bigquery']['schema'] = report_schema(next(rows))
 
       # write rows using standard out block in json ( allows customization across all scripts )
       if rows:

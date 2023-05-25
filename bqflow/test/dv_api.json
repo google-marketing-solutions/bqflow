@@ -1,0 +1,48 @@
+{
+  "tasks": [
+    { "dataset": {
+      "description":"Create dataset.",
+      "auth": "service",
+      "dataset": "Test"
+    }},
+    { "google_api": {
+      "description":"Pull partners.",
+      "api": "displayvideo",
+      "version": "v2",
+      "auth": "service",
+      "function": "partners.list",
+      "iterate": true,
+      "limit":3,
+      "kwargs": {},
+      "results": {
+        "bigquery": {
+          "auth": "service",
+          "dataset": "Test",
+          "table": "DV360_Partners"
+        }
+      }
+    }},
+    { "google_api": {
+      "description":"Pull advertiser.",
+      "api": "displayvideo",
+      "version": "v2",
+      "auth": "service",
+      "function": "advertisers.list",
+      "iterate": true,
+      "kwargs_remote": {
+        "bigquery": {
+          "auth": "service",
+          "dataset": "Test",
+          "query": "SELECT DISTINCT CAST(partnerId  AS STRING) partnerId FROM `DV360_Partners` LIMIT 3"
+        }
+      },
+      "results": {
+        "bigquery": {
+          "auth": "service",
+          "dataset": "Test",
+          "table": "DV360_Advertisers"
+        }
+      }
+    }}
+  ]
+}

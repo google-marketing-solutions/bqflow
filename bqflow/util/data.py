@@ -243,7 +243,7 @@ def put_rows(config, auth, destination, rows):
       source_format=destination['bigquery'].get('format', 'CSV') ,
       schema = destination['bigquery'].get('schema'),
       disposition = destination['bigquery'].get('disposition', 'WRITE_TRUNCATE'),
-      skip_rows = 1 if destination['bigquery'].get('header') and destination['bigquery'].get('schema') else 0
+      header=destination['bigquery'].get('header', False)
     )
 
     if 'merge' in destination['bigquery']:

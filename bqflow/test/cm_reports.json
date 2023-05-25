@@ -1,0 +1,54 @@
+{
+  "tasks":[
+    { "dataset": {
+       "description":"Create Test dataset.",
+       "auth": "service",
+       "dataset": "Test"
+    }},
+    { "cm_report":{
+      "description": "Create test report.",
+      "auth":"service",
+      "report":{
+        "account":7480,
+        "name":"BQFlow Test Report",
+        "body":{
+          "kind":"dfareporting#report",
+          "format":"CSV",
+          "type":"STANDARD",
+          "criteria":{
+            "dateRange":{
+              "kind":"dfareporting#dateRange",
+              "relativeDateRange":"LAST_7_DAYS"
+            },
+            "dimensions":[
+              { "kind":"dfareporting#sortedDimension", "name":"date" },
+              { "kind":"dfareporting#sortedDimension", "name":"advertiserId" },
+              { "kind":"dfareporting#sortedDimension", "name":"campaignId" },
+              { "kind":"dfareporting#sortedDimension", "name":"platformType" }
+            ],
+            "metricNames":[
+              "impressions",
+              "mediaCost"
+            ]
+          },
+          "schedule":{
+            "active":true,
+            "repeats":"WEEKLY",
+            "repeatsOnWeekDays":"MONDAY",
+            "every":10
+          },
+          "delivery":{
+            "emailOwner":false
+          }
+        }
+      },
+      "out":{
+        "bigquery":{
+          "auth":"service",
+          "dataset": "Test",
+          "table":"CM360_Report"
+        }
+      }
+    }}
+  ]
+}

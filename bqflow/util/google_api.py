@@ -495,7 +495,7 @@ def API_Sheets(config, auth, iterate=False):
   return API(config, api)
 
 
-def API_DCM(config, auth, iterate=False, internal=False):
+def API_DCM(config, auth, iterate=False):
   """DCM helper configuration for Google API.
 
   Defines agreed upon version.
@@ -507,10 +507,6 @@ def API_DCM(config, auth, iterate=False, internal=False):
       'auth': auth,
       'iterate': iterate
   }
-
-  if internal:
-    api['version'] = 'prerelease'
-
   return API(config, api)
 
 

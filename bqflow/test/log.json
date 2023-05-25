@@ -1,0 +1,53 @@
+{
+  "log":{ "bigquery":{ "auth":"service", "dataset":"Test", "table":"BQFlow", "disposition":"WRITE_TRUNCATE" }},
+  "tasks":[
+    { "dataset": {
+       "description":"Create Test dataset.",
+       "auth": "service",
+       "dataset": "Test"
+    }},
+    { "google_api": {
+      "auth":"service",
+      "api": "dfareporting",
+      "version": "v4",
+      "function": "userProfiles.list",
+      "kwargs":{},
+      "iterate":true,
+      "results": {
+        "bigquery": {
+          "auth":"srvice",
+          "dataset":"Test",
+          "table": "CM360_User_Profiles"
+        }
+      }
+    }},
+    { "google_api": {
+      "auth":"service",
+      "api": "dfareporting",
+      "version": "v4",
+      "function": "accounts.get",
+      "kwargs_remote":{
+        "bigquery":{
+          "auth": "srvice",
+          "dataset":"Test",
+          "query":"SELECT DISTINCT accountId AS id
+            FROM `CM360_User_Profiles`
+            WHERE NOT ENDS_WITH(userName, '@dcm')
+            AND (ARRAY_LENGTH({accounts}) = 0 OR accountId IN UNNEST({accounts}))
+          ",
+          "parameters":{
+            "accounts":[]
+          }
+        }
+      },
+      "iterate":false,
+      "results": {
+        "bigquery": {
+          "auth":"service",
+          "dataset":"Test",
+          "table": "CM360_Accounts"
+        }
+      }
+    }}
+  ]
+}

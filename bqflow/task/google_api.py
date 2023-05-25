@@ -128,16 +128,12 @@ def google_api_initilaize(config, api_call, alias=None):
   if api_call['api'] == 'dfareporting':
 
     if not api_call['function'].startswith('userProfiles'):
-
-      is_superuser, profile_id = get_profile_for_api(
-        config, api_call['auth'], api_call['kwargs']['id'] if api_call['function'] == 'accounts.get' else api_call['kwargs']['accountId']
+      profile_id = get_profile_for_api(
+        config,
+        api_call['auth'],
+        api_call['kwargs']['id'] if api_call['function'] == 'accounts.get' else api_call['kwargs']['accountId']
       )
       api_call['kwargs']['profileId'] = profile_id
-
-      if is_superuser:
-        api_call['version'] = 'prerelease'
-      elif 'accountId' in api_call['kwargs']:
-        del api_call['kwargs']['accountId']
 
 
 def google_api_build_results(config, auth, api_call, results):

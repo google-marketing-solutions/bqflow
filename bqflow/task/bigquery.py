@@ -64,7 +64,6 @@ def bigquery_values(config, task):
     table_id = task['to']['table'],
     rows = data.get_rows(config, task['auth'], task['from']),
     schema = task.get('schema', []),
-    skip_rows = 0
   )
 
 
@@ -143,13 +142,14 @@ def bigquery_storage(config, task):
     print('STORAGE TO TABLE', task['to']['table'])
 
   BigQuery(config, task['auth']).storage_to_table(
-    config.project,
-    task['to']['dataset'],
-    task['to']['table'],
-    task['from']['bucket'] + ':' + task['from']['path'],
-    task.get('schema', []), task.get('skip_rows', 1),
-    task.get('structure', 'CSV'),
-    task.get('disposition', 'WRITE_TRUNCATE')
+    project_id = config.project,
+    dataset_id = task['to']['dataset'],
+    table_id = task['to']['table'],
+    path = task['from']['bucket'] + ':' + task['from']['path'],
+    schema = task.get('schema'), 
+    header = task.get('header', False),
+    structure = task.get('structure', 'CSV'),
+    disposition = task.get('disposition', 'WRITE_TRUNCATE')
   )
 
 
