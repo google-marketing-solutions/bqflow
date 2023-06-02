@@ -42,13 +42,16 @@ setup(
     author='Paul Kenjora',
     author_email='kenjora@google.com',
     url='https://github.com/google/bqflow',
-    packages=find_packages(),
-    package_dir={'bqflow': 'bqflow'},
+    packages=['bqflow'],
     include_package_data=True,
     install_requires=REQUIREMENTS,
     entry_points={
         'console_scripts': [
-            'run = bqflow.run:main',
+            'bqflow_run = bqflow.run:main',
+            'bqflow_auth = bqflow.auth:main',
+            'bqflow_cm = bqflow.cm:main',
+            'bqflow_dv = bqflow.dv:main',
+            'bqflow_bq = bqflow.bq:main',
         ]
     },
     license='Apache License, Version 2.0',

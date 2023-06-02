@@ -222,84 +222,18 @@ def main():
 
       Example: python run.py [path to workflow file]
       Caution: This script does NOT check if the last job finished, potentially causing overruns.
-      Notes:
-        - To avoid running the entire script when debugging a single task, the command line
-          can easily replace "all" with the name of any "task" in the json.  For example
-          python run.py scripts/say_hello.json
-
-        - Or specified further to run only the second hello task:
-          python run.py scripts/say_hello.json -t 2
-
   """))
 
-  parser.add_argument(
-    'workflow',
-     help='Path, local or Google Drive link, to workflow json file to run.'
-  )
-
-  parser.add_argument(
-    '--project',
-    '-p',
-    help='Cloud ID of Google Cloud Project.',
-    default=None
-  )
-
-  parser.add_argument(
-    '--key',
-    '-k',
-    help='API Key of Google Cloud Project.',
-    default=None
-  )
-
-  parser.add_argument(
-   '--service',
-    '-s',
-    help='Path to SERVICE credentials json file.',
-    default=None
-  )
-
-  parser.add_argument(
-    '--client',
-    '-c',
-    help='Path to CLIENT credentials json file.',
-    default=None
-  )
-
-  parser.add_argument(
-    '--user',
-    '-u',
-     help='Path to USER credentials json file.',
-    default=None
-  )
-
-  parser.add_argument(
-    '--timezone',
-    '-tz',
-    help='Time zone to run schedules on.',
-    default='America/Los_Angeles',
-  )
-
-  parser.add_argument(
-    '--task',
-    '-t',
-    help='Task number of the task to run starting at 1.',
-    default=None,
-    type=int
-  )
-
-  parser.add_argument(
-    '--verbose',
-    '-v',
-    help='Print all the steps as they happen.',
-    action='store_true'
-  )
-
-  parser.add_argument(
-    '--force',
-    '-force',
-    help='Not used but included for compatiblity with another script.',
-    action='store_true'
-  )
+  parser.add_argument('workflow', help='Path, local or Google Drive link, to workflow json file to run.')
+  parser.add_argument('--project', '-p', help='Cloud ID of Google Cloud Project.', default=None)
+  parser.add_argument('--key', '-k', help='API Key of Google Cloud Project.', default=None)
+  parser.add_argument('--service', '-s', help='Path to SERVICE credentials json file.', default=None)
+  parser.add_argument('--client', '-c', help='Path to CLIENT credentials json file.', default=None)
+  parser.add_argument('--user', '-u', help='Path to USER credentials json file.', default=None)
+  parser.add_argument('--timezone', '-tz', help='Time zone to run schedules on.', default='America/Los_Angeles')
+  parser.add_argument('--task', '-t', help='Task number of the task to run starting at 1.', default=None, type=int)
+  parser.add_argument('--verbose', '-v', help='Print all the steps as they happen.', action='store_true')
+  parser.add_argument('--force', '-force', help='Not used but included for compatiblity with another script.', action='store_true')
 
   args = parser.parse_args()
 
