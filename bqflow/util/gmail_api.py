@@ -31,10 +31,10 @@ from datetime import timedelta
 
 from googleapiclient.errors import HttpError
 
-from util.google_api import API_Gmail
-from util.misc import parse_url, date_to_str
-from util.storage import parse_filename
-from util.csv import rows_to_csv
+from bqflow.util.google_api import API_Gmail
+from bqflow.util.misc import parse_url, date_to_str
+from bqflow.util.storage import parse_filename
+from bqflow.util.csv import rows_to_csv
 
 
 def _list_unique(seq):

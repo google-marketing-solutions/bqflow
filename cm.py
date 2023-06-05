@@ -22,10 +22,10 @@ import json
 import argparse
 import textwrap
 
-from util.cm_api import get_profile_for_api, report_to_rows, report_clean, report_file, report_schema
-from util.configuration import Configuration
-from util.csv import rows_to_type, rows_print
-from util.google_api import API_DCM
+from bqflow.util.cm_api import get_profile_for_api, report_to_rows, report_clean, report_file, report_schema
+from bqflow.util.configuration import Configuration
+from bqflow.util.csv import rows_to_type, rows_print
+from bqflow.util.google_api import API_DCM
 
 
 def task_template(auth, report):

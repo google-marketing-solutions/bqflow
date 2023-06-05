@@ -22,8 +22,8 @@ Connects the Google Search Ads Reporting API to recipe JSON.  This task
 is required because the reporting response needs additional processing.
 """
 
-from util.data import put_rows
-from util.sa_api import SA_Report
+from bqflow.util.data import put_rows
+from bqflow.util.sa_api import SA_Report
 
 
 def sa_report(config, log, task):

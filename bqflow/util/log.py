@@ -1,7 +1,7 @@
 import datetime
 
-from util.bigquery_api import BigQuery
-from util.data import put_rows
+from bqflow.util.bigquery_api import BigQuery
+from bqflow.util.data import put_rows
 
 LOG_HEADER = '{Timing: <30} {Status: <10} {Description: <50} {Parameters: <50}'
 LOG_SCHEMA = [

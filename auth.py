@@ -22,8 +22,8 @@ import json
 import argparse
 import textwrap
 
-from util.auth import get_profile
-from util.configuration import Configuration
+from bqflow.util.auth import get_profile
+from bqflow.util.configuration import Configuration
 
 
 def main():
@@ -64,8 +64,8 @@ def main():
           DOES NOT WORK IN A VM because of the Google Authentication Flow, do this from your local machine.
 
         Examples: 
-          python bqflow/bqflow/auth.py -c [CLIENT file path, you have this] -u [USER file path, file will be created]
-          python bqflow/bqflow/auth.py -c client.json  and -u user.json
+          python bqflow/auth.py -c [CLIENT file path, you have this] -u [USER file path, file will be created]
+          python bqflow/auth.py -c client.json  and -u user.json
 
         All scopes are controlled by: bqflow/bqflow/config.py
 

@@ -27,7 +27,7 @@ from googleapiclient.http import MediaIoBaseUpload
 from googleapiclient.errors import HttpError
 from google.oauth2.service_account import Credentials
 
-from config import UI_SERVICE
+from bqflow.config import UI_SERVICE
 
 RE_CREDENTIALS_JSON = re.compile(r'^\s*\{.*\}\s*$', re.DOTALL)
 

@@ -45,7 +45,7 @@ try:
 except:
   import http.client as httplib
 
-from util.auth import get_service
+from bqflow.util.auth import get_service
 
 RETRIABLE_EXCEPTIONS = (httplib2.HttpLib2Error, IOError, httplib.NotConnected,
                         httplib.IncompleteRead, httplib.ImproperConnectionState,

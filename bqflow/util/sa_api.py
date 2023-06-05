@@ -20,9 +20,9 @@ from datetime import timedelta
 from time import sleep
 import typing
 
-from util.csv import column_header_sanitize, csv_to_rows
-from util.google_api import API_SearchAds
-from util.sa_fields import SA_FIELDS
+from bqflow.util.csv import column_header_sanitize, csv_to_rows
+from bqflow.util.google_api import API_SearchAds
+from bqflow.util.sa_fields import SA_FIELDS
 
 
 SA_TYPES = {

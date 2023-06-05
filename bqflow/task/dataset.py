@@ -16,7 +16,7 @@
 #
 ###########################################################################
 
-from util.bigquery_api import BigQuery
+from bqflow.util.bigquery_api import BigQuery
 
 def dataset(config, log, task):
 

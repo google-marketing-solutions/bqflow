@@ -22,11 +22,11 @@ import json
 import argparse
 import textwrap
 
-from util.bigquery_api import get_schema
-from util.csv import rows_to_type, rows_print
-from util.configuration import Configuration
-from util.dv_api import report_file, report_to_rows, report_clean
-from util.google_api import API_DBM
+from bqflow.util.bigquery_api import get_schema
+from bqflow.util.csv import rows_to_type, rows_print
+from bqflow.util.configuration import Configuration
+from bqflow.util.dv_api import report_file, report_to_rows, report_clean
+from bqflow.util.google_api import API_DBM
 
 def task_template(auth, report):
   """Helper to create a BQFlow compatible task JSON from DV report."""

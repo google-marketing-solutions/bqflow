@@ -23,11 +23,11 @@ import textwrap
 import multiprocessing
 from typing import List
 
-from util.configuration import Configuration
-from util.drive import Drive
-from util.google_api import API_Drive
+from bqflow.util.configuration import Configuration
+from bqflow.util.drive import Drive
+from bqflow.util.google_api import API_Drive
 
-from run import get_workflow, execute
+from bqflow.run import get_workflow, execute
 
 
 class DriveRunner():

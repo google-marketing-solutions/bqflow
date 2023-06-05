@@ -22,8 +22,8 @@ import re
 
 from googleapiclient.errors import HttpError
 
-from util.google_api import API_Sheets
-from util.drive import Drive
+from bqflow.util.google_api import API_Sheets
+from bqflow.util.drive import Drive
 
 
 def sheets_id(config, auth, url_or_name):

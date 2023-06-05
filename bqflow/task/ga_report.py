@@ -22,8 +22,8 @@ Connects the Google Analytics Reporting API to recipe JSON.  This task
 is required because the reporting response needs additional processing.
 """
 
-from util.data import put_rows
-from util.ga_api import GA_Report
+from bqflow.util.data import put_rows
+from bqflow.util.ga_api import GA_Report
 
 
 def ga_report(config, log, task):

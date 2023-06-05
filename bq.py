@@ -22,10 +22,10 @@ import json
 import textwrap
 import argparse
 
-from util.bigquery_api import BigQuery, get_schema
-from util.configuration import Configuration
-from util.csv import csv_to_rows
-from util.google_api import API_BigQuery
+from bqflow.util.bigquery_api import BigQuery, get_schema
+from bqflow.util.configuration import Configuration
+from bqflow.util.csv import csv_to_rows
+from bqflow.util.google_api import API_BigQuery
 
 
 def dashboard_template(schema, _level=0):

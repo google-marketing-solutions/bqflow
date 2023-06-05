@@ -22,12 +22,12 @@ from io import StringIO
 from types import GeneratorType
 from datetime import date, timedelta
 
-from util import misc
-from util.data import get_rows
-from util.google_api import API_DCM
-from util.storage_api import media_download
-from util.csv import column_header_sanitize, csv_to_rows
-from util.cm_schema import DCM_Field_Lookup
+from bqflow.util import misc
+from bqflow.util.data import get_rows
+from bqflow.util.google_api import API_DCM
+from bqflow.util.storage_api import media_download
+from bqflow.util.csv import column_header_sanitize, csv_to_rows
+from bqflow.util.cm_schema import DCM_Field_Lookup
 
 DCM_CHUNKSIZE = misc.memory_scale(maximum=200 * 1024**3, multiple=256 * 1024)
 DCM_CONVERSION_SIZE = 1000

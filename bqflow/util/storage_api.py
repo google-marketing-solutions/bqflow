@@ -26,9 +26,9 @@ from io import BytesIO
 from googleapiclient.http import MediaIoBaseUpload, MediaIoBaseDownload
 from googleapiclient.errors import HttpError
 
-from util.misc import memory_scale
-from util.google_api import API_Storage
-from util.csv import find_utf8_split
+from bqflow.util.misc import memory_scale
+from bqflow.util.google_api import API_Storage
+from bqflow.util.csv import find_utf8_split
 
 
 STORAGE_CHUNKSIZE = memory_scale(maximum=200 * 1024**3, multiple=256 * 1024)

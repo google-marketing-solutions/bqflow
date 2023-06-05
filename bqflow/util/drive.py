@@ -25,8 +25,8 @@ from io import BytesIO
 from googleapiclient.http import MediaIoBaseUpload
 from googleapiclient.errors import HttpError
 
-from util.google_api import API_Drive
-from util import misc
+from bqflow.util.google_api import API_Drive
+from bqflow.util import misc
 
 
 DRIVE_CHUNKSIZE = misc.memory_scale(maximum=200 * 1024**3, multiple=256 * 1024)

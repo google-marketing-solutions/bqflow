@@ -21,12 +21,12 @@ import time
 from types import GeneratorType
 from urllib.request import urlopen
 
-import util.misc as misc
-from util.data import get_rows
-from util.csv import column_header_sanitize, csv_to_rows, rows_to_csv, response_utf8_stream
-from util.google_api import API_DBM
+from bqflow.util.misc import memory_scale
+from bqflow.util.data import get_rows
+from bqflow.util.csv import column_header_sanitize, csv_to_rows, rows_to_csv, response_utf8_stream
+from bqflow.util.google_api import API_DBM
 
-DBM_CHUNKSIZE = misc.memory_scale(maximum=200 * 1024**3, multiple=256 * 1024)
+DBM_CHUNKSIZE = memory_scale(maximum=200 * 1024**3, multiple=256 * 1024)
 RE_FILENAME = re.compile(r'.*/(.*)\?GoogleAccess')
 
 def report_get(config, auth, report_id=None, name=None):

@@ -1,0 +1,67 @@
+###########################################################################
+#
+#  Copyright 2023 Google LLC
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#    https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+#
+###########################################################################
+
+[tool.poetry]
+
+name = 'bqflow'
+version = '0.0.2'
+license = 'Apache License, Version 2.0'
+description = 'BQFlow is a Google gTech built python framework for BigQuery to Google API ETL.'
+repository = 'https://github.com/google/bqflow'
+readme = "README.md"
+
+authors = ['Paul Kenjora <kenjora@google.com>', 'Ana Esqueda <anaesqueda@google.com>']
+keywords = ['Google', 'BigQuery', 'ETL', 'DV360', 'CM360', 'GA360', 'SA360', 'Google Ads', 'Adwords', 'BQFlow']
+classifiers = [
+  'Development Status :: 4 - Beta',
+  'Intended Audience :: Developers',
+  'License :: OSI Approved :: Apache Software License',
+  'Natural Language :: English',
+  'Programming Language :: Python :: 3',
+]
+
+packages = [
+  { include = 'bqflow', from = '' },
+  { include = 'bqflow.util', from = 'bqflow/util' },
+  { include = 'bqflow.task', from = 'bqflow/task' },
+]
+
+requires-python = ">=3.7"
+
+[tool.poetry.scripts]
+
+bqflow_run = 'bqflow.run:main'
+bqflow_auth = 'bqflow.auth:main'
+bqflow_cm = 'bqflow.cm:main'
+bqflow_dv = 'bqflow.dv:main'
+bqflow_bq = 'bqflow.bq:main'
+bqflow_schedule_local = 'bqflow.schedule_local:main'
+bqflow_schedule_drive = 'bqflow.schedule_drive:main'
+
+
+[tool.poetry.dependencies]
+
+google-api-python-client = "*"
+google-auth = "*"
+google-auth-oauthlib = "*"
+google-auth-httplib2 = "*"
+google-cloud-bigquery = "*"
+psutil = "*"
+python-dateutil = "*"
+pytz = "*"
+

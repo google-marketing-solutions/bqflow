@@ -36,8 +36,8 @@ proto files.
 
 """
 
-from util.data import get_rows, put_rows
-from util.cm_api import report_delete, report_filter, report_build, report_file, report_to_rows, report_clean, report_schema, report_run
+from bqflow.util.data import get_rows, put_rows
+from bqflow.util.cm_api import report_delete, report_filter, report_build, report_file, report_to_rows, report_clean, report_schema, report_run
 
 
 def cm_report(config, log, task):

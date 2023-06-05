@@ -94,12 +94,12 @@ import traceback
 
 from googleapiclient.errors import HttpError
 
-from util.bigquery_api import BigQuery
-from util.data import get_rows
-from util.data import put_rows
-from util.cm_api import get_profile_for_api
-from util.google_api import API
-from util.discovery_to_bigquery import Discovery_To_BigQuery
+from bqflow.util.bigquery_api import BigQuery
+from bqflow.util.data import get_rows
+from bqflow.util.data import put_rows
+from bqflow.util.cm_api import get_profile_for_api
+from bqflow.util.google_api import API
+from bqflow.util.discovery_to_bigquery import Discovery_To_BigQuery
 
 
 def google_api_initilaize(config, api_call, alias=None):

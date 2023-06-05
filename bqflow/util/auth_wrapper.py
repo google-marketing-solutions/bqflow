@@ -27,10 +27,10 @@ from google_auth_oauthlib.flow import Flow, InstalledAppFlow
 from google.oauth2.credentials import Credentials as CredentialsUser
 from google.oauth2.service_account import Credentials as CredentialsService
 
-from util.auth_storage import credentials_storage_get, credentials_storage_put
-from util.configuration import Configuration
+from bqflow.util.auth_storage import credentials_storage_get, credentials_storage_put
+from bqflow.util.configuration import Configuration
 
-from config import APPLICATION_NAME, APPLICATION_SCOPES, UI_PROJECT, UI_SERVICE
+from bqflow.config import APPLICATION_NAME, APPLICATION_SCOPES, UI_PROJECT, UI_SERVICE
 
 # FUTURE: migrate to protocol specifier pattern: (storage://, file://, secret://, and {} for JSON)
 RE_CREDENTIALS_STORAGE = re.compile(r'[a-z0-9_\-\.]+:.+\.json')

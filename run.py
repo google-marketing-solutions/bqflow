@@ -23,10 +23,10 @@ import argparse
 import textwrap
 import importlib
 
-from util.configuration import Configuration
-from util.log import Log
-from util.drive import Drive
-from util.google_api import API_Drive
+from bqflow.util.configuration import Configuration
+from bqflow.util.log import Log
+from bqflow.util.drive import Drive
+from bqflow.util.google_api import API_Drive
 
 GOOGLE_DRIVE_PREFIX = 'https://drive.google.com/'
 
@@ -196,7 +196,7 @@ def execute(config, workflow, force=False, instance=None):
 
     if force or is_scheduled(config, task):
       python_callable = getattr(
-        importlib.import_module('task.%s' % script),
+        importlib.import_module('bqflow.task.%s' % script),
         script
       )
       task['sequence'] = sequence

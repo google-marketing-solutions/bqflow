@@ -32,9 +32,9 @@ from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaIoBaseUpload
 from google.cloud.bigquery._helpers import _row_tuple_from_json
 
-from util.misc import flag_last, memory_scale
-from util.google_api import API_BigQuery, API_Retry
-from util.csv import row_header_sanitize
+from bqflow.util.misc import flag_last, memory_scale
+from bqflow.util.google_api import API_BigQuery, API_Retry
+from bqflow.util.csv import row_header_sanitize
 
 BIGQUERY_CHUNKSIZE = memory_scale(maximum=4294967296, multiple=256 * 1024)
 

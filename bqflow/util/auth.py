@@ -23,9 +23,9 @@ import threading
 from googleapiclient import discovery
 from googleapiclient.http import HttpRequest
 
-from util.auth_wrapper import CredentialsFlowWrapper
-from util.auth_wrapper import CredentialsServiceWrapper
-from util.auth_wrapper import CredentialsUserWrapper
+from bqflow.util.auth_wrapper import CredentialsFlowWrapper
+from bqflow.util.auth_wrapper import CredentialsServiceWrapper
+from bqflow.util.auth_wrapper import CredentialsUserWrapper
 
 DISCOVERY_CACHE = {}
 APIS_WITHOUT_DISCOVERY_DOCS = ('oauth',)

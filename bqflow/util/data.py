@@ -30,10 +30,10 @@ Key benfits include:
 
 """
 
-from util.storage_api import parse_path, makedirs_safe, object_put, bucket_create
-from util.bigquery_api import BigQuery, query_parameters
-from util.sheets_api import sheets_read, sheets_write, sheets_clear
-from util.csv import rows_to_csv, rows_to_type
+from bqflow.util.storage_api import parse_path, makedirs_safe, object_put, bucket_create
+from bqflow.util.bigquery_api import BigQuery, query_parameters
+from bqflow.util.sheets_api import sheets_read, sheets_write, sheets_clear
+from bqflow.util.csv import rows_to_csv, rows_to_type
 
 
 def get_rows(config, auth, source, as_object=False, unnest=False):
@@ -57,7 +57,7 @@ def get_rows(config, auth, source, as_object=False, unnest=False):
   Include the following JSON in a recipe, then in the run.py handler when
   encountering that block pass it to this function and use the returned results.
 
-    from utils.data import get_rows
+    from bqflow.util.data import get_rows
 
     var_json = {
       "in":{
@@ -179,7 +179,7 @@ def put_rows(config, auth, destination, rows):
   Include the following JSON in a recipe, then in the run.py handler when
   encountering that block pass it to this function and use the returned results.
 
-    from utils.data import put_rows
+    from bqflow.util.data import put_rows
 
     var_json = {
       "out":{

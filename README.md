@@ -46,7 +46,7 @@ receive workflow JSON files from Google when collaborating on a project. The
 following command will show you how to run a workflow:
 
 ```
-python3 bqflow/bqflow/run.py -h
+python3 bqflow/run.py -h
 ```
 
 ## Run A Group Of Workflows
@@ -54,7 +54,7 @@ python3 bqflow/bqflow/run.py -h
 To execute multiple workflows in parallel, use the following command:
 
 ```
-python3 bqflow/bqflow/schedule_local.py -h
+python3 bqflow/schedule_local.py -h
 ```
 
 ## VM Runner Script
@@ -73,15 +73,15 @@ To execute workflows on a schedule within a VM, follow [these instructions](http
      * **Install Pip:** `sudo apt-get install python3-pip`
      * **Install BQFlow:** `git clone https://github.com/google/bqflow`
      * **Install Requirments:** `python3 -m pip install -r bqflow/requirements.txt`
-     * **Print These Instructions In VM:** `python3 bqflow/bqflow/schedule_local.py -h`
+     * **Print These Instructions In VM:** `python3 bqflow/schedule_local.py -h`
      * **Create Workflow Directory And Add Workflows:** `mkdir workflows`
-     * **Run Workflows Manually:** `python3 bqflow/bqflow/schedule_local.py`
+     * **Run Workflows Manually:** `python3 bqflow/schedule_local.py`
   1. Set up the startup script.
      * Log out of the VM.
      * Edit the VM and navigate to Management > Automation > Automation, and add:
        ```
        #!/bin/bash
-       sudo -u $USER bash -c 'python3 /home/$USER/bqflow/bqflow/schedule_local.py'
+       sudo -u $USER bash -c 'python3 /home/$USER/bqflow/schedule_local.py'
        shutdown -h +1
        ```
   1. Set up the [schedule tab](https://console.cloud.google.com/compute/instances/instanceSchedules?&tab=instanceSchedules).
@@ -123,7 +123,7 @@ To execute the workflows on a schedule from [Google Drive](https://www.google.co
      * Edit the VM and navigate to Management > Automation > Automation, and add:
        ```
        #!/bin/bash
-       sudo -u $USER bash -c 'python3 /home/$USER/bqflow/bqflow/schedule_drive.py [DRIVE FOLDER LINK] -s DEFAULT -p [CLOUD PROJECT ID]'
+       sudo -u $USER bash -c 'python3 /home/$USER/bqflow/schedule_drive.py [DRIVE FOLDER LINK] -s DEFAULT -p [CLOUD PROJECT ID]'
        shutdown -h +1
        ```
   1. Set up the [schedule tab](https://console.cloud.google.com/compute/instances/instanceSchedules?&tab=instanceSchedules).
@@ -145,7 +145,7 @@ when handling credentials.
      * **JSON**, dowload the service keys to the VM (or equivalent) and use in combination with specific workflows.
      * Be sure to grant the service the [IAM Roles](https://cloud.google.com/iam/docs/grant-role-console) **roles/bigquery.dataOwner** and **roles/bigquery.jobUser**.
   1. For [User](https://developers.google.com/workspace/guides/create-credentials#oauth-client-id)
-     * Run `python3 bqflow/bqflow/auth.py -h` and follow instructions.
+     * Run `python3 bqflow/auth.py -h` and follow instructions.
 
 # Logs
 

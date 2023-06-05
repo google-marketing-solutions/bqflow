@@ -31,9 +31,9 @@ Includes:
   bigquery_values - write explicit values to a table ( future get_rows )
 """
 
-from util.bigquery_api import BigQuery
-from util.bigquery_api import query_parameters
-from util import data
+from bqflow.util.bigquery_api import BigQuery
+from bqflow.util.bigquery_api import query_parameters
+from bqflow.util import data
 
 
 def bigquery_run(config, task):

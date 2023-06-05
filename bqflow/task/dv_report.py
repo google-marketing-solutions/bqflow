@@ -33,8 +33,8 @@ Buffers are controlled in config.py.
 
 """
 
-from util.data import put_rows
-from util.dv_api import report_delete, report_filter, report_build, report_file, report_to_rows, report_clean, report_run
+from bqflow.util.data import put_rows
+from bqflow.util.dv_api import report_delete, report_filter, report_build, report_file, report_to_rows, report_clean, report_run
 
 
 def dv_report(config, log, task):

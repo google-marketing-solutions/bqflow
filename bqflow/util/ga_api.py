@@ -21,8 +21,8 @@
 import datetime
 import typing
 
-from util.csv import column_header_sanitize, csv_to_rows, rows_to_csv, response_utf8_stream
-from util.google_api import API_AnalyticsReporting
+from bqflow.util.csv import column_header_sanitize, csv_to_rows, rows_to_csv, response_utf8_stream
+from bqflow.util.google_api import API_AnalyticsReporting
 
 
 class GA_Report():
