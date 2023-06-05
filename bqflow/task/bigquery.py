@@ -86,7 +86,7 @@ def bigquery_query_to_table(config, task):
   )
 
 
-def bigquery_query_to_table(config, task):
+def bigquery_query_to_sheet(config, task):
   """Execute a query and write results to sheet."""
 
   if config.verbose:
@@ -102,11 +102,11 @@ def bigquery_query_to_table(config, task):
     legacy=task['from'].get('legacy', False)
   )
 
-  put_rows(
+  data.put_rows(
     config=config,
-    auth=auth,
+    auth=task['auth'],
     destination = { 'sheets': {
-      'auth':task['to'].get('auth', auth),
+      'auth':task['to'].get('auth', task['auth']),
       'sheet':task['to']['sheet'],
       'tab':task['to']['tab'],
       'range':task['to'].get('range', 'A2'),
@@ -135,7 +135,7 @@ def bigquery_query_to_view(config, task):
   )
 
 
-def bigquery_storage(config, task):
+def bigquery_storage_to_table(config, task):
   """Read from storage into a table."""
 
   if config.verbose:
@@ -146,7 +146,7 @@ def bigquery_storage(config, task):
     dataset_id = task['to']['dataset'],
     table_id = task['to']['table'],
     path = task['from']['bucket'] + ':' + task['from']['path'],
-    schema = task.get('schema'), 
+    schema = task.get('schema'),
     header = task.get('header', False),
     structure = task.get('structure', 'CSV'),
     disposition = task.get('disposition', 'WRITE_TRUNCATE')
@@ -169,6 +169,6 @@ def bigquery(config, log, task):
     else:
       raise NotImplementedError('The bigquery task has no such handler.')
   elif 'bucket' in task['from']:
-    bigquery_query(config, task)
+    bigquery_storage_to_table(config, task)
   else:
     raise NotImplementedError('The bigquery task has no such handler.')
