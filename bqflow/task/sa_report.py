@@ -32,7 +32,7 @@ def sa_report(config, log, task):
 
   report = SA_Report(config, task['auth'])
   report.request(task['body'])
-  rows = report.get_rows()
+  rows = report.get_rows(timeout=task.get('timeout', 10))
 
   if 'bigquery' in task.get('out', {}):
     task['out']['bigquery']['schema'] = report.get_schema()

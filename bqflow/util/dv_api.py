@@ -218,9 +218,13 @@ def report_fetch(config, auth, report_id=None, name=None, timeout=60):
 
     # exit
     except StopIteration:
-      if config.verbose:
-        print('MISSING FILE')
-      return False
+      break
+
+  # if here no file was found
+  if config.verbose:
+    print('TIMED OUT WAITING')
+
+  return False
 
 
 def report_run(config, auth, report_id=None, name=None):

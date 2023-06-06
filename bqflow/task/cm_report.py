@@ -102,7 +102,7 @@ def cm_report(config, log, task):
       task['report']['account'],
       task['report'].get('report_id', None),
       report_name,
-      task['report'].get('timeout', 10),
+      task.get('timeout', 10),
     )
 
     if report:

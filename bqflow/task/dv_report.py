@@ -97,7 +97,7 @@ def dv_report(config, log, task):
       task['auth'],
       task['report'].get('report_id', None),
       task['report'].get('name', None),
-      task['report'].get('timeout', 10)
+      task.get('timeout', 10)
     )
 
     # if a report exists

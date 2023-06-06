@@ -1,0 +1,63 @@
+{
+  "tasks": [
+    { "dataset": {
+      "description":"Create Test dataset.",
+      "auth": "service",
+      "dataset": "Test"
+    }},
+    { "dv_report":{
+      "description":"Create DV Report: BQFlow Test Report",
+      "auth":"service",
+      "delete":true,
+      "report":{
+        "filters": {
+          "FILTER_PARTNER": {
+            "single_cell":true,
+            "values":["191"]
+          }
+        },
+        "body":{
+          "metadata": {
+            "title": "BQFlow Test Report",
+            "dataRange": { "range":"LAST_7_DAYS" },
+            "format": "CSV"
+          },
+          "params": {
+            "type": "STANDARD",
+            "filters": [],
+            "groupBys": [
+              "FILTER_ADVERTISER_CURRENCY",
+              "FILTER_ADVERTISER"
+            ],
+            "metrics": [
+              "METRIC_BILLABLE_IMPRESSIONS"
+            ],
+            "options": {
+              "includeOnlyTargetedUserLists": false
+            }
+          }
+        }
+      }
+    }},
+    { "dv_report":{
+      "description":"Fetch DV Report: BQFlow Test Report",
+      "auth":"service",
+      "report":{
+        "name":"BQFlow Test Report"
+      },
+      "out":{
+        "bigquery":{
+          "auth":"service",
+          "dataset":"Test",
+          "table":"DV360_Report",
+          "header":true,
+          "schema":[
+            { "name": "Advertiser_Currency", "type": "STRING" },
+            { "name": "Advertiser_Id", "type": "INTEGER" },
+            { "name": "Billable_Impressions", "type": "FLOAT" }
+          ]
+        }
+      }
+    }}
+  ]
+}

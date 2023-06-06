@@ -161,7 +161,7 @@ class SA_Report():
     return self.reportIds
 
 
-  def get_rows(self, reportIds:list=None, timeout:int=60*3) -> typing.Iterator[dict]:
+  def get_rows(self, reportIds:list=None, timeout:int=10) -> typing.Iterator[dict]:
     '''Return each row of data from a report as a generator.
 
     Wait up to 3 hours with 1 minute poll intervals for report to finish.
