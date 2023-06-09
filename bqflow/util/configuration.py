@@ -48,6 +48,8 @@ three important concepts:
     B. Use default credentials, these must be specified for security reasons:
        --service / -s = "DEFAULT"
 
+    C. Authorize without using a browser redirect. Works on VMs and Colabs.
+       --browserless / -b
 """
 
 import os
@@ -71,7 +73,8 @@ class Configuration():
     user=None,
     key=None,
     timezone='America/Los_Angeles',
-    verbose=False
+    verbose=False,
+    browserless=False
   ):
     """Used in BQFlow scripts as programmatic entry point.
 
@@ -81,8 +84,9 @@ class Configuration():
       * client: (string) See module description.
       * user: (string) See module description.
       * key: (string) See module description.
-      * verbose: (boolean) See module description.
       * timezone: (string) See module description.
+      * verbose: (boolean) See module description.
+      * browserless: (boolean) See module description.
       * args: (dict) dictionary of arguments (used with argParse).
 
     Returns:
@@ -94,6 +98,7 @@ class Configuration():
     self.client = client
     self.user = user
     self.verbose = verbose
+    self.browserless = browserless
     self.key = key
 
     self.days = []

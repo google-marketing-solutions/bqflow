@@ -39,7 +39,8 @@ def get_credentials(config, auth):
     try:
       return CredentialsUserWrapper(
         config.user,
-        config.client
+        config.client,
+        config.browserless
       )
     except (KeyError, ValueError) as e:
       print('')

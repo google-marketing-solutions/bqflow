@@ -102,7 +102,7 @@ def main():
 
     Examples:
       Display table schema: `python bigquery.py --project [id] --dataset [name] --table [name] -s [credentials]`
-      Create view task: `python bigquery.py --project [id] --dataset [name] --view [name] -s [credentials]`
+      Create view task: `python bigquery.py --project [id] --dataset [name] --task [name] -s [credentials]`
       Upload csv table: `python bigquery.py --project [id] --dataset [name] --table [name] --csv [file] --schema [file] -s [credentials]`
 
   """))
@@ -113,7 +113,7 @@ def main():
 
   parser.add_argument( '--dataset', help='name of BigQuery dataset', default=None)
   parser.add_argument( '--table', help='name of BigQuery table', default=None)
-  parser.add_argument( '--view', help='name of view to turn into BQFlow task', default=None)
+  parser.add_argument( '--task', help='name of view to turn into BQFlow task', default=None)
   parser.add_argument( '--csv', help='CSV file path', default=None)
   parser.add_argument( '--schema', help='SCHEMA file path', default=None)
   parser.add_argument( '--dashboard', help='Generate a dashboard query to mimic table schema.', default=None)
@@ -131,10 +131,10 @@ def main():
 
   schema = json.loads(args.schema) if args.schema else None
 
-  if args.view:
+  if args.task:
     print(json.dumps(task_template(
      auth,
-     API_BigQuery(config, auth).tables().get(projectId=config.project, datasetId=args.dataset, tableId=args.view).execute()
+     API_BigQuery(config, auth).tables().get(projectId=config.project, datasetId=args.dataset, tableId=args.task).execute()
     ), indent=2).replace('\\n', '\n'))
 
   elif args.csv:

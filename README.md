@@ -86,7 +86,7 @@ To execute workflows on a schedule within a VM, follow [these instructions](http
        ```
   1. Set up the [schedule tab](https://console.cloud.google.com/compute/instances/instanceSchedules?&tab=instanceSchedules).
 
-**NOTE:** To prevent the VM from shuttind down when you log in you will have to
+**NOTE:** To prevent the VM from shutting down when you log in you will have to
 comment out the startup logic, save, and then log in.
 
 ## Drive Runner Script
@@ -142,7 +142,7 @@ when handling credentials.
 
   1. For [Service](https://developers.google.com/workspace/guides/create-credentials#service-account) you have 2 options:
      * **Keyless**, provision credentials and assign to VM, a key is never downloaded but all workflows must run as this service.
-     * **JSON**, dowload the service keys to the VM (or equivalent) and use in combination with specific workflows.
+     * **JSON**, download the service keys to the VM (or equivalent) and use in combination with specific workflows.
      * Be sure to grant the service the [IAM Roles](https://cloud.google.com/iam/docs/grant-role-console) **roles/bigquery.dataOwner** and **roles/bigquery.jobUser**.
   1. For [User](https://developers.google.com/workspace/guides/create-credentials#oauth-client-id)
      * Run `python3 bqflow/auth.py -h` and follow instructions.

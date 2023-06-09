@@ -386,7 +386,7 @@ class BigQuery():
     dataset_id,
     view_id,
     query,
-    legacy=True,
+    legacy=False,
     replace=False
   ):
 
@@ -947,7 +947,7 @@ class BigQuery():
     dataset_id,
     query,
     row_max=None,
-    legacy=True,
+    legacy=False,
     as_object=False
   ):
 
@@ -1006,7 +1006,7 @@ class BigQuery():
         break
 
 
-  def query_to_schema(self, project_id, dataset_id, query, legacy=True):
+  def query_to_schema(self, project_id, dataset_id, query, legacy=False):
 
     if self.config.verbose:
       print('BIGQUERY QUERY SCHEMA:', project_id, dataset_id)

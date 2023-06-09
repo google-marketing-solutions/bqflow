@@ -86,10 +86,19 @@ def main():
     default=None
   )
 
+  parser.add_argument(
+    '--browserless',
+    '-b',
+    action='store_true',
+     help='Run the authentication without access to a local browser.',
+    default=False
+  )
+
   args = parser.parse_args()
   config = Configuration(
     user=args.user,
-    client=args.client
+    client=args.client,
+    browserless=args.browserless
   )
 
   # get profile to verify everything worked

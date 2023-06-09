@@ -21,6 +21,7 @@ import re
 import json
 import datetime
 import google.auth
+import urllib.parse
 
 from google.auth.transport.requests import Request
 from google_auth_oauthlib.flow import Flow, InstalledAppFlow
@@ -85,9 +86,10 @@ def CredentialsServiceWrapper(service):
 
 class CredentialsUserWrapper(CredentialsUser):
 
-  def __init__(self, user=None, client=None):
+  def __init__(self, user=None, client=None, browserless=False):
     self.user = user
     self.client = client
+    self.browserless = browserless
 
     super(CredentialsUserWrapper, self).__init__(None)
     self.load()
@@ -135,10 +137,33 @@ class CredentialsUserWrapper(CredentialsUser):
 
   def load_flow(self):
     flow = CredentialsFlowWrapper(self.client)
-    flow.run_local_server()
+
+    if self.browserless:
+      flow.redirect_uri = 'https://localhost:8080'
+      auth_url, _ = flow.authorization_url(prompt='consent')
+      print()
+      print('\033[1mIn your local browser, visit...\033[0m')
+      print()
+      print(auth_url)
+      print()
+      print('  - You may be asked to log in.')
+      print('  - You may be asked to approve scopes required to run workflows.')
+      print('  - After authenticating, you will land on an \033[91mERROR PAGE\033[0m THAT READS \033[91mThis site can\’t be reached\033[0m.')
+      print('  - Thats \033[1mOK\033[0m, copy the BROWSER URL from the \033[91mERROR PAGE\033[0m.')
+      print()
+      url = input('Click to the right of this text and paste the BROWSER URL, then press enter or return: ').strip()
+      print()
+      print('  - You should have valid credentials in your -u/--user file.')
+      print('  - You should see your profile information below...')
+      print()
+      code = urllib.parse.parse_qs(urllib.parse.urlparse(url).query)['code'][0]
+      flow.fetch_token(code=code)
+    else:
+      flow.run_local_server() #host = 'localhost', port = 8080, open_browser=False)
 
     self.from_credentials(flow.credentials)
     self.save()
+
 
   def load_secret(self):
     from secret_manager import SecretManager
