@@ -66,6 +66,7 @@ def main():
         Examples: 
           python bqflow/auth.py -c [CLIENT file path, you have this] -u [USER file path, file will be created]
           python bqflow/auth.py -c client.json  and -u user.json
+          python bqflow/auth.py -c client.json  and -u user.json -browserless
 
         All scopes are controlled by: bqflow/bqflow/config.py
 
