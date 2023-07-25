@@ -244,8 +244,11 @@ class CredentialsUserWrapper(CredentialsUser):
   def refresh(self, request=None):
     self.load()
     if not self.valid:
-      if request is None:
-        request = Request()
-      super(CredentialsUserWrapper, self).refresh(request)
-      self.expiry = self.expiry.replace(microsecond=0) # make parsing more consistent, microseconds are not essential
-      self.save()
+      try:
+        super(CredentialsUserWrapper, self).refresh(request or Request())
+        self.expiry = self.expiry.replace(microsecond=0) # make parsing more consistent, microseconds are not essential
+        self.save()
+      except google.auth.exceptions.RefreshError as e:
+        print('ERROR:', str(e))
+        print('Attempting to auth again...')
+        self.load_flow()

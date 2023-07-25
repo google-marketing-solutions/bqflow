@@ -51,14 +51,13 @@ def get_workflow(filepath=None, filecontent=None):
   except ValueError as e:
     pos = 0
     for count, line in enumerate(filecontent.splitlines(), 1):
-      # do not add newlines, e.pos was run on a version where newlines were removed
-      pos += len(line)
-      if pos >= e.pos:
+      if pos + len(line) + 1 < e.pos:
+        pos += len(line) + 1
+      else:
         e.lineno = count
-        e.pos = pos
         e.args = (
           'JSON ERROR: %s LINE: %s CHARACTER: %s ERROR: %s LINE: %s' %
-          (filepath, count, pos - e.pos, str(e.msg), line.strip()),
+          (filepath, count, e.pos - pos - 1, str(e.msg), line.strip()),
         )
         raise
 

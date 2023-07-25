@@ -40,7 +40,7 @@ def bigquery_run(config, task):
   """Execute a query without expected return results."""
 
   if config.verbose:
-    print('RUN QUERY', task['run']['query'])
+    print('RUN QUERY')
 
   BigQuery(config, task['auth']).query_run(
     project_id = config.project,
