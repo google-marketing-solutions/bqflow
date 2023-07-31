@@ -18,6 +18,7 @@
 
 import sys
 import socket
+import time
 import threading
 
 from googleapiclient import discovery
@@ -27,10 +28,12 @@ from bqflow.util.auth_wrapper import CredentialsFlowWrapper
 from bqflow.util.auth_wrapper import CredentialsServiceWrapper
 from bqflow.util.auth_wrapper import CredentialsUserWrapper
 
-DISCOVERY_CACHE = {}
+DISCOVERY_CACHE = {} # strore (DISCOVERY_CACHE_CREDENTIALS, DISCOVERY_CACHE_TIME) pairs
+DISCOVERY_CACHE_CREDENTIALS, DISCOVERY_CACHE_TIME = 0, 1
+DISCOVERY_CACHE_SECONDS = 590 # refresh the cache for long running process, 60 minutes from testing.
 APIS_WITHOUT_DISCOVERY_DOCS = ('oauth',)
 
-# set timeout to 10 minutes ( reduce socket.timeout: The read operation timed out )
+# set timeout to 10 minutes
 socket.setdefaulttimeout(600)
 
 def get_credentials(config, auth):
@@ -95,7 +98,7 @@ def get_service(config,
 
   cache_key = api + version + auth + str(key) + str(threading.current_thread().ident) + config.fingerprint()
 
-  if cache_key not in DISCOVERY_CACHE:
+  if cache_key not in DISCOVERY_CACHE or time.time() - DISCOVERY_CACHE[cache_key][DISCOVERY_CACHE_TIME] > DISCOVERY_CACHE_SECONDS:
     credentials = get_credentials(config, auth)
 
     if uri_file:
@@ -106,7 +109,7 @@ def get_service(config,
           credentials=credentials,
           developerKey=key,
           requestBuilder=HttpRequestCustom
-       )
+       ), time.time()
       else:
         with open(uri_file, 'r') as cache_file:
           DISCOVERY_CACHE[cache_key] = discovery.build_from_document(
@@ -114,7 +117,8 @@ def get_service(config,
             credentials=credentials,
             developerKey=key,
             requestBuilder=HttpRequestCustom
-          )
+          ), time.time()
+
     else:
       # See: https://github.com/googleapis/google-api-python-client/issues/1225
       try:
@@ -134,7 +138,8 @@ def get_service(config,
           requestBuilder=HttpRequestCustom,
           discoveryServiceUrl=uri_template,
           static_discovery=False
-        )
+        ), time.time()
+
       # PATCH: static_discovery not present in google-api-python-client < 2, default version in colab
       # ALTERNATE WORKAROUND: pip install update google-api-python-client==2.3 --no-deps --force-reinstall
       except TypeError:
@@ -150,9 +155,9 @@ def get_service(config,
           developerKey=key,
           requestBuilder=HttpRequestCustom,
           discoveryServiceUrl=uri_template
-        )
+        ), time.time()
 
-  return DISCOVERY_CACHE[cache_key]
+  return DISCOVERY_CACHE[cache_key][DISCOVERY_CACHE_CREDENTIALS]
 
 
 def get_client_type(credentials):
