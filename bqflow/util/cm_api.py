@@ -90,8 +90,9 @@ def get_account_name(config, auth, account):
 
   """
 
-  account_id, advertiser_ids = parse_account(config, auth, account)
-  profile_id = get_profile_for_api(config, auth, account_id)
+  account_id, profile_id, advertiser_ids = parse_account(config, auth, account)
+  if not profile_id:
+    profile_id = get_profile_for_api(config, auth, account_id)
   response = API_DCM(config, auth).accounts().get(id=account_id, profileId=profile_id).execute()
   return response['name']
 
@@ -133,13 +134,15 @@ def parse_account(config, auth, account):
   except:
     pass
 
-  # if network or advertiser, convert to integer
+  # if network, profile_id, advertiser, convert to integer
   if network_id is not None:
     network_id = int(network_id)
+  if profile_id is not None:
+    profile_id = int(profile_id)
   if advertiser_ids is not None:
     advertiser_ids = [int(advertiser_id.strip()) for advertiser_id in advertiser_ids.split(',')]
 
-  return network_id, advertiser_ids
+  return network_id, profile_id, advertiser_ids
 
 
 def report_get(config, auth, account, report_id=None, name=None):
@@ -161,8 +164,9 @@ def report_get(config, auth, account, report_id=None, name=None):
 
   report = None
 
-  account_id, advertiser_ids = parse_account(config, auth, account)
-  profile_id = get_profile_for_api(config, auth, account_id)
+  account_id, profile_id, advertiser_ids = parse_account(config, auth, account)
+  if not profile_id:
+    profile_id = get_profile_for_api(config, auth, account_id)
 
   if name:
     for r in API_DCM(config, auth, iterate=True).reports().list(
@@ -200,8 +204,9 @@ def report_delete(config, auth, account, report_id=None, name=None):
 
   report = report_get(config, auth, account, report_id, name)
   if report:
-    account_id, advertiser_ids = parse_account(config, auth, account)
-    profile_id = get_profile_for_api(config, auth, account_id)
+    account_id, profile_id, advertiser_ids = parse_account(config, auth, account)
+    if not profile_id:
+      profile_id = get_profile_for_api(config, auth, account_id)
     API_DCM(config, auth).reports().delete(
       profileId = profile_id,
       reportId = report['id']
@@ -296,8 +301,9 @@ def report_build(config, auth, account, body):
   report = report_get(config, auth, account, name=body['name'])
 
   if report is None:
-    account_id, advertiser_ids = parse_account(config, auth, account)
-    profile_id = get_profile_for_api(config, auth, account_id)
+    account_id, profile_id, advertiser_ids = parse_account(config, auth, account)
+    if not profile_id:
+      profile_id = get_profile_for_api(config, auth, account_id)
 
     # add the account id to the body
     body['accountId'] = account_id
@@ -442,8 +448,9 @@ def report_run(config, auth, account, report_id=None, name=None):
 
   """
 
-  account_id, advertiser_id = parse_account(config, auth, account)
-  profile_id = get_profile_for_api(config, auth, account_id)
+  account_id, profile_id, advertiser_ids = parse_account(config, auth, account)
+  if not profile_id:
+    profile_id = get_profile_for_api(config, auth, account_id)
 
   if config.verbose:
     print('DCM REPORT RUN INIT', report_id or name)
@@ -503,7 +510,7 @@ def report_file(config, auth,
 
   """
 
-  account_id, advertiser_id = parse_account(config, auth, account)
+  account_id, profile_id, advertiser_ids = parse_account(config, auth, account)
   file_json = report_fetch(config, auth, account, report_id, name, timeout)
 
   if file_json == False:
@@ -550,8 +557,9 @@ def report_list(config, auth, account):
 
   """
 
-  account_id, advertiser_id = parse_account(config, auth, account)
-  profile_id = get_profile_for_api(config, auth, account_id)
+  account_id, profile_id, advertiser_ids = parse_account(config, auth, account)
+  if not profile_id:
+    profile_id = get_profile_for_api(config, auth, account_id)
   for report in API_DCM(config, auth, iterate=True).reports().list(
     profileId = profile_id
   ).execute():
@@ -574,8 +582,9 @@ def report_files(config, auth, account, report_id):
 
   """
 
-  account_id, advertiser_id = parse_account(config, auth, account)
-  profile_id = get_profile_for_api(config, auth, account_id)
+  account_id, profile_id, advertiser_ids = parse_account(config, auth, account)
+  if not profile_id:
+    profile_id = get_profile_for_api(config, auth, account_id)
   for report_file in API_DCM(config, auth, iterate=True).reports().files().list(
     profileId = profile_id,
     reportId = report_id
@@ -765,8 +774,9 @@ def conversions_upload(config, auth,
       https://developers.google.com/doubleclick-advertisers/v3.2/conversions/batchinsert#encryptionInfo
   """
 
-  account_id, advertiser_id = parse_account(config, auth, account)
-  profile_id = get_profile_for_api(config, auth, account_id)
+  account_id, profile_id, advertiser_ids = parse_account(config, auth, account)
+  if not profile_id:
+    profile_id = get_profile_for_api(config, auth, account_id)
 
   response = API_DCM(config, auth).floodlightActivities().get(
     profileId = profile_id,
