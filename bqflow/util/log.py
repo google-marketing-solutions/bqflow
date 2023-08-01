@@ -94,12 +94,12 @@ class Log():
         'Parameters':'-' * 50
       }))
       for entry in self.buffer:
-        entry['Parameters'] = ', '.join('{Key}:{Value}'.format(**p) for p in entry['Parameters'])
+        entry['Parameters'] = ', '.join('{Key}:{Value}'.format(**p) for p in (entry['Parameters'] or []))
         print(LOG_HEADER.format(**entry))
       print()
 
 
-  def write(self, status, description, parameters):
+  def write(self, status, description, parameters=None):
     """Writes to the local buffer, will be writen to destination in destructor.
   
     Args:

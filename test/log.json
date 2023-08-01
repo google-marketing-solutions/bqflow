@@ -30,7 +30,7 @@
         "bigquery":{
           "auth": "srvice",
           "dataset":"Test",
-          "query":"SELECT DISTINCT accountId AS id
+          "query":"SELECT DISTINCT CAST(accountId AS STRING) AS id
             FROM `CM360_User_Profiles`
             WHERE NOT ENDS_WITH(userName, '@dcm')
             AND (ARRAY_LENGTH({accounts}) = 0 OR accountId IN UNNEST({accounts}))

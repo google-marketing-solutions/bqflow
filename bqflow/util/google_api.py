@@ -100,7 +100,7 @@ def API_Retry(job, key=None, retries=3, wait=31):
       if content['error']['code'] == 409:
         return None
       # permission denied ( won't change on retry so raise )
-      elif content.get('error', {}).get('status') == 'PERMISSION_DENIED' or content.get('error', {}).get('errors', [{}])[0].get('reason') == 'forbidden':
+      elif content.get('error', {}).get('status') == 'PERMISSION_DENIED' or content.get('error', {}).get('errors', [{}])[0].get('reason') in ('forbidden', 'accountDisabled'):
         print('ERROR DETAILS:', e.content.decode())
         raise
       elif retries > 0:
@@ -382,7 +382,10 @@ class API():
           if isinstance(self.function, Resource) else self.function(), f_n)
 
     # for cases where job is handled manually, save the job
-    self.job = self.function(**self.function_kwargs)
+    try:
+      self.job = self.function(**self.function_kwargs)
+    except TypeError as e:
+      raise TypeError('SEE EXCEPTION ABOVE, ARE YOU MISSING A PARAMETER OR PASSING AN ID INTO API AS AN INT INSTEAD OF A STRING?') from e
 
     if run:
       self.response = API_Retry(self.job)

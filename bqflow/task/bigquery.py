@@ -153,12 +153,34 @@ def bigquery_storage_to_table(config, task):
   )
 
 
+def bigquery_table_from_sheet(config, task):
+  """Create a sheet linked table."""
+
+  if config.verbose:
+    print('TABLE FROM SHEET', task['from']['sheet']['url'])
+
+  BigQuery(config, task['auth']).table_from_sheet(
+    project_id = config.project,
+    dataset_id = task['to']['dataset'],
+    table_id = task['to']['table'],
+    sheet_url = task['from']['sheet']['url'],
+    sheet_tab = task['from']['sheet']['tab'],
+    sheet_range = task['from']['sheet'].get('range'),
+    schema = task['to'].get('schema'),
+    header = task['from']['sheet'].get('header', False),
+    overwrite = task.get('overwrite', False),
+    expiration_days = task.get('expiration_days')
+  )
+
+
 def bigquery(config, log, task):
 
   if 'run' in task:
     bigquery_run(config, task)
   elif 'values' in task['from']:
     bigquery_values(config, task)
+  elif 'sheet' in task['from']:
+    bigquery_table_from_sheet(config, task)
   elif 'query' in task['from']:
     if 'table' in task['to']:
       bigquery_query_to_table(config, task)

@@ -27,9 +27,9 @@
       "function": "accounts.get",
       "kwargs_remote":{
         "bigquery":{
-          "auth": "srvice",
+          "auth": "service",
           "dataset":"Test",
-          "query":"SELECT DISTINCT accountId AS id
+          "query":"SELECT DISTINCT CAST(accountId AS STRING) AS id
             FROM `CM360_User_Profiles`
             WHERE NOT ENDS_WITH(userName, '@dcm')
             AND (ARRAY_LENGTH({accounts}) = 0 OR accountId IN UNNEST({accounts}))
