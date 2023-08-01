@@ -199,7 +199,13 @@ def execute(config, workflow, force=False, instance=None):
         script
       )
       task['sequence'] = sequence
-      python_callable(config, log, task)
+      try:
+        python_callable(config, log, task)
+        log.write('OK', 'TASK #{} COMPLETE: {} - {}'.format(sequence, script, task.get('description', '')))
+      except Exception as e:
+        log.write('ERROR', 'TASK #{} FAILED: {} - {} WITH ERROR: {} {}'.format(sequence, script, task.get('description', ''), e.__class__.__name__, str(e)))
+        raise
+
     else:
       print('Schedule Skipping: add --force to ignore schedule')
 

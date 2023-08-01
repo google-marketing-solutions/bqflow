@@ -10,10 +10,10 @@
       "api": "displayvideo",
       "version": "v2",
       "auth": "service",
-      "function": "partners.list",
-      "iterate": true,
+      "function": "partners.get",
+      "iterate": false,
       "limit":3,
-      "kwargs": {},
+      "kwargs": { "partnerId":"1918039" },
       "results": {
         "bigquery": {
           "auth": "service",

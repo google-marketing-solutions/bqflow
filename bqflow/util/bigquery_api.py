@@ -26,7 +26,6 @@ import json
 import datetime
 import time
 
-
 from io import BytesIO
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaIoBaseUpload
@@ -717,14 +716,61 @@ class BigQuery():
     if schema:
       body['schema'] = {'fields': schema}
 
-    if is_time_partition:
-      body['timePartitioning'] = {'type': 'DAY'}
-
     if expiration_days is not None:
       body['expirationTime'] = str(int((time.time() + (expiration_days * 24 * 60 * 60)) * 1000)) # string in milliseconds
 
     if is_time_partition:
       body['timePartitioning'] = {'type': 'DAY'}
+
+    API_BigQuery(self.config, self.auth).tables().insert(
+      projectId=project_id,
+      datasetId=dataset_id,
+      body=body
+    ).execute()
+
+
+  def table_from_sheet(
+    self,
+    project_id,
+    dataset_id,
+    table_id,
+    sheet_url,
+    sheet_tab,
+    sheet_range='A1',
+    schema=None,
+    header=False,
+    overwrite=True,
+    expiration_days=None
+  ):
+
+    if overwrite:
+      self.table_delete(project_id, dataset_id, table_id)
+
+    body = {
+      'tableReference': {
+        'projectId': project_id,
+        'tableId': table_id,
+        'datasetId': dataset_id,
+      },
+      'externalDataConfiguration': {
+        'sourceUris':sheet_url,
+        'sourceFormat':'GOOGLE_SHEETS',
+        'googleSheetsOptions':{
+          'skipLeadingRows': 1 if header else 0,
+          'range': '{}!{}'.format(sheet_tab, sheet_range),
+        }
+      }
+    }
+
+    print('body', body)
+
+    if schema:
+      body['externalDataConfiguration']['schema'] = {'fields': schema}
+    else:
+      body['autodetect'] = True
+
+    if expiration_days is not None:
+      body['expirationTime'] = str(int((time.time() + (expiration_days * 24 * 60 * 60)) * 1000)) # string in milliseconds
 
     API_BigQuery(self.config, self.auth).tables().insert(
       projectId=project_id,

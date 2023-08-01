@@ -70,7 +70,7 @@ def get_profile_for_api(config, auth, account_id=None):
       profile_network = p_id
 
   if profile_network:
-    return profile_network
+    return str(profile_network)
   else:
     raise Exception('Add your user profile to DCM account %s.' % account_id)
 

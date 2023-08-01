@@ -32,7 +32,7 @@ Key benfits include:
 
 from bqflow.util.storage_api import parse_path, makedirs_safe, object_put, bucket_create
 from bqflow.util.bigquery_api import BigQuery, query_parameters
-from bqflow.util.sheets_api import sheets_read, sheets_write, sheets_clear
+from bqflow.util.sheets_api import Sheets 
 from bqflow.util.csv import rows_to_csv, rows_to_type
 
 
@@ -112,9 +112,7 @@ def get_rows(config, auth, source, as_object=False, unnest=False):
 
     # should be sheets, deprecate sheet over next few releases
     if 'sheet' in source:
-      rows = sheets_read(
-        config,
-        source['sheet'].get('auth', auth),
+      rows = Sheets(config, source['sheet'].get('auth', auth)).sheet_read(
         source['sheet']['sheet'],
         source['sheet']['tab'],
         source['sheet']['range'],
@@ -124,9 +122,7 @@ def get_rows(config, auth, source, as_object=False, unnest=False):
         yield row[0] if unnest or source.get('single_cell', False) or source.get('unnest', False) else row
 
     if 'sheets' in source:
-      rows = sheets_read(
-        config,
-        source['sheets'].get('auth', auth),
+      rows = Sheets(config, source['sheets'].get('auth', auth)).sheet_read(
         source['sheets']['sheet'],
         source['sheets']['tab'],
         source['sheets']['range'],
@@ -257,17 +253,13 @@ def put_rows(config, auth, destination, rows):
 
   elif 'sheets' in destination:
     if destination['sheets'].get('delete', False):
-      sheets_clear(
-        config,
-        destination['sheets'].get('auth', auth),
+      Sheets(config, source['sheets'].get('auth', auth)).tab_clear(
         destination['sheets']['sheet'],
         destination['sheets']['tab'],
         destination['sheets']['range'],
       )
 
-    sheets_write(
-      config,
-      destination['sheets'].get('auth', auth),
+    Sheets(config, source['sheets'].get('auth', auth)).tab_write(
       destination['sheets']['sheet'],
       destination['sheets']['tab'],
       destination['sheets']['range'],
