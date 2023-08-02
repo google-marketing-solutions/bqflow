@@ -81,9 +81,10 @@ To execute workflows on a schedule within a VM, follow [these instructions](http
      * Edit the VM and navigate to Management > Automation > Automation, and add:
        ```
        #!/bin/bash
-       sudo -u $USER bash -c 'python3 /home/$USER/bqflow/schedule_local.py'
+       sudo -u [YOUR USERNAME] bash -c 'python3 /home/[YOUR USERNAME]/bqflow/schedule_local.py'
        shutdown -h +1
        ```
+       Find [YOUR USERNAME] on the VM by running `echo $USER`.
   1. Set up the [schedule tab](https://console.cloud.google.com/compute/instances/instanceSchedules?&tab=instanceSchedules).
 
 **NOTE:** To prevent the VM from shutting down when you log in you will have to
@@ -123,9 +124,10 @@ To execute the workflows on a schedule from [Google Drive](https://www.google.co
      * Edit the VM and navigate to Management > Automation > Automation, and add:
        ```
        #!/bin/bash
-       sudo -u $USER bash -c 'python3 /home/$USER/bqflow/schedule_drive.py [DRIVE FOLDER LINK] -s DEFAULT -p [CLOUD PROJECT ID]'
+       sudo -u [YOUR USERNAME] bash -c 'python3 /home/[YOUR USERNAME]/bqflow/schedule_drive.py [DRIVE FOLDER LINK] -s DEFAULT -p [CLOUD PROJECT ID]'
        shutdown -h +1
        ```
+       Find [YOUR USERNAME] on the VM by running `echo $USER`.
   1. Set up the [schedule tab](https://console.cloud.google.com/compute/instances/instanceSchedules?&tab=instanceSchedules).
   1. Start adding workflows to your drive folder and sharing with the service email address from step one.
      * For security reasons workflows have to be in [DRIVE FOLDER LINK].
