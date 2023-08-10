@@ -31,8 +31,11 @@ Includes:
   bigquery_values - write explicit values to a table ( future get_rows )
 """
 
-from bqflow.util.bigquery_api import BigQuery
-from bqflow.util.bigquery_api import query_parameters
+from bqflow.util.bigquery_api import BigQuery, query_parameters
+from bqflow.util.drive import Drive
+from bqflow.util.google_api import API_Drive
+from bqflow.util.sheets_api import Sheets
+from bqflow.util.csv import csv_to_rows, rows_header_trim
 from bqflow.util import data
 
 
@@ -146,7 +149,7 @@ def bigquery_storage_to_table(config, task):
     dataset_id = task['to']['dataset'],
     table_id = task['to']['table'],
     path = task['from']['bucket'] + ':' + task['from']['path'],
-    schema = task.get('schema'),
+    schema = task['to'].get('schema'),
     header = task.get('header', False),
     structure = task.get('structure', 'CSV'),
     disposition = task.get('disposition', 'WRITE_TRUNCATE')
@@ -157,19 +160,53 @@ def bigquery_table_from_sheet(config, task):
   """Create a sheet linked table."""
 
   if config.verbose:
-    print('TABLE FROM SHEET', task['from']['sheet']['url'])
+    print('TABLE FROM SHEET', task['from']['sheet'])
 
   BigQuery(config, task['auth']).table_from_sheet(
     project_id = config.project,
     dataset_id = task['to']['dataset'],
     table_id = task['to']['table'],
-    sheet_url = task['from']['sheet']['url'],
-    sheet_tab = task['from']['sheet']['tab'],
-    sheet_range = task['from']['sheet'].get('range'),
+    sheet_url = Sheets(config, task['auth']).sheet_url(task['from']['sheet']),
+    sheet_tab = task['from']['tab'],
+    sheet_range = task['from'].get('range'),
     schema = task['to'].get('schema'),
-    header = task['from']['sheet'].get('header', False),
+    header = task['from'].get('header', False),
     overwrite = task.get('overwrite', False),
     expiration_days = task.get('expiration_days')
+  )
+
+
+def bigquery_table_from_drive(config, task):
+  """Download Drive CSV files from file or folder path."""
+
+  if config.verbose:
+    print('TABLE FROM DRIVE', task['from']['drive'])
+
+  def _fetch_rows():
+    drive_or_folder = Drive(config, task['auth']).file_get(task['from']['drive'])
+    if drive_or_folder['mimeType'] == 'application/vnd.google-apps.folder':
+      file_ids = [f['id'] for f in API_Drive(config, task['auth'], iterate=True).files().list(
+        q='mimeType="text/csv" and trashed=false'.format(drive_or_folder['id']),
+        fields='files(id)'
+      ).execute()]
+    else:
+      file_ids = [drive_or_folder['driveId']] 
+
+    for file_id in file_ids:
+      if config.verbose:
+        print('.', end='', flush=True)
+
+      rows = csv_to_rows(API_Drive(config, task['auth']).files().get_media(fileId=file_id).execute().decode())
+      if task['from']['header']:
+        rows = rows_header_trim(rows)
+      yield from rows
+
+  BigQuery(config, task['auth']).rows_to_table(
+    project_id = config.project,
+    dataset_id = task['to']['dataset'],
+    table_id = task['to']['table'],
+    rows = _fetch_rows(),
+    schema = task['to'].get('schema', [])
   )
 
 
@@ -181,6 +218,8 @@ def bigquery(config, log, task):
     bigquery_values(config, task)
   elif 'sheet' in task['from']:
     bigquery_table_from_sheet(config, task)
+  elif 'drive' in task['from']:
+    bigquery_table_from_drive(config, task)
   elif 'query' in task['from']:
     if 'table' in task['to']:
       bigquery_query_to_table(config, task)

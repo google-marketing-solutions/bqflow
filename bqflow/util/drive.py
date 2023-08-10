@@ -111,7 +111,8 @@ class Drive():
     return None
   
   
-  def file_get(self, drive_id):
+  def file_get(self, url_or_name):
+    drive_id = self.file_id(url_or_name)
     return API_Drive(self.config, self.auth).files().get(fileId=drive_id).execute()
   
   
@@ -236,7 +237,7 @@ class Drive():
     if destination_id:
       if self.config.verbose:
         print('Drive: File exists.')
-      return self.file_get(destination_id)
+      return API_Drive(self.config, self.auth).files().get(fileId=drive_id).execute()
   
     else:
       source_id = self.file_id(source_name)
