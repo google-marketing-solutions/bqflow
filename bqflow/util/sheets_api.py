@@ -39,7 +39,7 @@ class Sheets():
     self.config = config
     self.auth = auth
 
-  def sheet_id(url_or_name):
+  def sheet_id(self, url_or_name):
     '''Pull sheet id from URL, name, or id itself
   
     Args:
@@ -75,7 +75,7 @@ class Sheets():
     return None
   
   
-  def sheet_url(url_or_name):
+  def sheet_url(self, url_or_name):
     '''Normalizes a full sheet URL from some key.
   
     Args:
@@ -85,11 +85,10 @@ class Sheets():
       URL of sheet.
     '''
   
-    sheet_id = self.sheet_id(url_or_name)
-    return 'https://docs.google.com/spreadsheets/d/%s/' % sheet_id
+    return 'https://docs.google.com/spreadsheets/d/%s/' % self.sheet_id(url_or_name)
   
   
-  def tab_range(sheet_tab, sheet_range):
+  def tab_range(self, sheet_tab, sheet_range):
     '''Helper for creating range format.
   
     Args:
@@ -106,7 +105,7 @@ class Sheets():
       return sheet_tab
   
   
-  def sheet_get(sheet_url_or_name):
+  def sheet_get(self, sheet_url_or_name):
     '''Get sheets definition.
   
     Args:
@@ -118,12 +117,14 @@ class Sheets():
   
     sheet_id = self.sheet_id(sheet_url_or_name)
     if sheet_id:
-      return API_Sheets(self.config, self.auth).spreadsheets().get(spreadsheetId=sheet_id).execute()
+      return API_Sheets(self.config, self.auth).spreadsheets().get(
+        spreadsheetId=sheet_id
+      ).execute()
     else:
       return None
   
   
-  def tab_id(sheet_url_or_name, sheet_tab):
+  def tab_id(self, sheet_url_or_name, sheet_tab):
     '''Pull sheet tab id from URL, name, or id itself.
   
     Args:
@@ -146,7 +147,7 @@ class Sheets():
     return sheet_id, tab_id
   
   
-  def tab_read(sheet_url_or_name, sheet_tab, sheet_range=''):
+  def tab_read(self, sheet_url_or_name, sheet_tab, sheet_range=''):
     '''Pull sheet id from URL, name, or id itself
   
     Args:
@@ -162,14 +163,14 @@ class Sheets():
     if sheet_id:
       return API_Sheets(self.config, self.auth).spreadsheets().values().get(
         spreadsheetId=sheet_id,
-        range=tab_range(sheet_tab, sheet_range)
+        range=self.tab_range(sheet_tab, sheet_range)
       ).execute().get('values')
     else:
       raise ValueError('Sheet does not exist for %s: %s' % (self.config, self.auth, sheet_url_or_name))
   
   
   # TIP: Specify sheet_range as 'Tab!A1' coordinate, the API will figure out length and height based on data
-  def tab_write(sheet_url_or_name, sheet_tab, sheet_range, rows, append=False, valueInputOption='RAW'):
+  def tab_write(self, sheet_url_or_name, sheet_tab, sheet_range, rows, append=False, valueInputOption='RAW'):
     '''Write to sheets for specified range.
   
     Args:
@@ -186,13 +187,13 @@ class Sheets():
     if self.config.verbose:
       print('SHEETS WRITE', sheet_url_or_name, sheet_tab, sheet_range)
     sheet_id = self.sheet_id(sheet_url_or_name)
-    range = tab_range(sheet_tab, sheet_range)
+    tab_range = self.tab_range(sheet_tab, sheet_range)
     body = {'values': list(rows)}
   
     if append:
       API_Sheets(self.config, self.auth).spreadsheets().values().append(
         spreadsheetId=sheet_id,
-        range=range,
+        range=tab_range,
         body=body,
         valueInputOption=valueInputOption,
         insertDataOption='OVERWRITE'
@@ -206,7 +207,7 @@ class Sheets():
       ).execute()
   
   
-  def tab_clear(sheet_url_or_name, sheet_tab, sheet_range):
+  def tab_clear(self, sheet_url_or_name, sheet_tab, sheet_range):
     '''Clear a sheet in the specified range.
   
     Args:
@@ -223,14 +224,14 @@ class Sheets():
     if sheet_id:
       API_Sheets(self.config, self.auth).spreadsheets().values().clear(
         spreadsheetId=sheet_id,
-        range=tab_range(sheet_tab, sheet_range),
+        range=self.tab_range(sheet_tab, sheet_range),
         body={}
       ).execute()
     else:
       raise ValueError('Sheet does not exist for %s: %s' % (self.config, self.auth, sheet_url_or_name))
   
   
-  def tab_copy(from_sheet_url_or_name, from_sheet_tab, to_sheet_url_or_name, to_sheet_tab, overwrite=False):
+  def tab_copy(self, from_sheet_url_or_name, from_sheet_tab, to_sheet_url_or_name, to_sheet_tab, overwrite=False):
     '''Copy a tab to a specific name, without the 'Copy Of...'.
   
     Args:
@@ -286,7 +287,7 @@ class Sheets():
       ).execute()
   
   
-  def batch_update(sheet_url_or_name, data):
+  def batch_update(self, sheet_url_or_name, data):
     '''Helper for performing batch operations.
   
     Args:
@@ -303,7 +304,7 @@ class Sheets():
     ).execute()
   
   
-  def values_batch_update(sheet_url_or_name, data):
+  def values_batch_update(self, sheet_url_or_name, data):
     '''Helper for performing batch value operations.
   
     Args:
@@ -320,7 +321,7 @@ class Sheets():
     ).execute()
   
   
-  def tab_create(sheet_url_or_name, sheet_tab):
+  def tab_create(self, sheet_url_or_name, sheet_tab):
     '''Create a tab in a sheet.
   
     Args:
@@ -343,7 +344,7 @@ class Sheets():
           }]})
   
   
-  def tab_delete(sheet_url_or_name, sheet_tab):
+  def tab_delete(self, sheet_url_or_name, sheet_tab):
     '''Delete a tab in a sheet.
   
     Args:
@@ -375,7 +376,7 @@ class Sheets():
               }]})
   
   
-  def tab_rename(sheet_url_or_name, old_sheet_tab, new_sheet_tab):
+  def tab_rename(self, sheet_url_or_name, old_sheet_tab, new_sheet_tab):
     '''Rename a tab in a sheet.
   
     Args:
@@ -402,7 +403,7 @@ class Sheets():
           })
   
   
-  def sheet_create(sheet_name, sheet_tab, template_sheet=None, template_tab=None):
+  def sheet_create(self, sheet_name, sheet_tab, template_sheet=None, template_tab=None):
     """ Checks if sheet with name already exists ( outside of trash ) and
   
     if not, creates the sheet. Both sheet and tab must be provided or both must be

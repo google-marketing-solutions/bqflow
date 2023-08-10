@@ -125,15 +125,14 @@ def google_api_initilaize(config, api_call, alias=None):
   if api_call['function'].endswith('list') or alias == 'list':
     api_call['iterate'] = True
 
-  if api_call['api'] == 'dfareporting':
-
-    if not api_call['function'].startswith('userProfiles'):
-      profile_id = get_profile_for_api(
-        config,
-        api_call['auth'],
-        api_call['kwargs']['id'] if api_call['function'] == 'accounts.get' else api_call['kwargs']['accountId']
-      )
-      api_call['kwargs']['profileId'] = profile_id
+  # speical helper for CM360 API, determines profileId based on accountId
+  if api_call['api'] == 'dfareporting' and 'accountId' in api_call.get('kwargs', {}):
+    api_call['kwargs']['profileId'] = get_profile_for_api(
+      config,
+      api_call['auth'],
+      api_call['kwargs']['accountId']
+    )
+    del api_call['kwargs']['accountId']
 
 
 def google_api_build_results(config, auth, api_call, results):
