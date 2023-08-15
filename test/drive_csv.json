@@ -1,0 +1,30 @@
+{
+  "script":{
+    "license":"Licensed under the Apache License, Version 2.0",
+    "copyright":"Copyright 2021 Google LLC"
+  },
+  "tasks": [
+    { "dataset": {
+      "description": "Create a dataset for bigquery tables.",
+      "auth":"user",
+      "dataset":"drive_csv"
+    }},
+    { "bigquery":{
+      "description":"Download CSV files from Drive.",
+      "auth":"user",
+      "from":{
+        "drive":"https://drive.google.com/corp/drive/folders/1HlQpOUYnVE6XlXenDhcaWRh5-eH1grI4/",
+        "header":true
+      },
+      "to":{
+        "dataset":"drive_csv",
+        "table":"csv_data",
+        "schema":[
+          { "name": "A", "type": "STRING" },
+          { "name": "B", "type": "STRING" },
+          { "name": "C", "type": "STRING" }
+        ]
+      }
+    }}
+  ]
+}

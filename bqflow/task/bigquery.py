@@ -186,11 +186,11 @@ def bigquery_table_from_drive(config, task):
     drive_or_folder = Drive(config, task['auth']).file_get(task['from']['drive'])
     if drive_or_folder['mimeType'] == 'application/vnd.google-apps.folder':
       file_ids = [f['id'] for f in API_Drive(config, task['auth'], iterate=True).files().list(
-        q='mimeType="text/csv" and trashed=false'.format(drive_or_folder['id']),
-        fields='files(id)'
+        q="'{}' in parents and (mimeType='text/csv' or mimeType='text/plain') and trashed=false".format(drive_or_folder['id']),
+        fields='nextPageToken, files(id)'
       ).execute()]
     else:
-      file_ids = [drive_or_folder['driveId']] 
+      file_ids = [drive_or_folder['driveId']]
 
     for file_id in file_ids:
       if config.verbose:
