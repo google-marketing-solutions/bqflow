@@ -7,6 +7,7 @@
     }},
     { "dv_report":{
       "description":"Create DV Report: BQFlow Test Report",
+      "documentation":"https://developers.google.com/bid-manager/reference/rest/v2/queries/create",
       "auth":"service",
       "delete":true,
       "report":{

@@ -7,8 +7,9 @@
     }},
     { "google_api": {
       "description":"Pull partners.",
+      "documentation":"https://developers.google.com/display-video/api/reference/rest/v3/partners/list",
       "api": "displayvideo",
-      "version": "v2",
+      "version": "v3",
       "auth": "service",
       "function": "partners.list",
       "iterate": true,
@@ -24,8 +25,9 @@
     }},
     { "google_api": {
       "description":"Pull advertiser.",
+      "documentation":"https://developers.google.com/display-video/api/reference/rest/v3/advertisers/list",
       "api": "displayvideo",
-      "version": "v2",
+      "version": "v3",
       "auth": "service",
       "function": "advertisers.list",
       "iterate": true,
@@ -38,6 +40,7 @@
       },
       "results": {
         "bigquery": {
+          "documentation":"https://github.com/google-marketing-solutions/bqflow/wiki/Incremental-Load-Example",
           "auth": "service",
           "dataset": "Test",
           "table": "DV360_Advertisers",

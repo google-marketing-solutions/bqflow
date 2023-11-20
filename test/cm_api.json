@@ -1,11 +1,13 @@
 {
   "tasks":[
     { "dataset": {
-       "description":"Create Test dataset.",
-       "auth": "service",
-       "dataset": "Test"
+      "description":"Create Test dataset.",
+      "auth": "service",
+      "dataset": "Test"
     }},
     { "google_api": {
+      "description":"Pull all profiles authorized for user.",
+      "documentation":"https://developers.google.com/doubleclick-advertisers/rest/v4/accountUserProfiles/list",
       "auth":"service",
       "api": "dfareporting",
       "version": "v4",
@@ -21,6 +23,8 @@
       }
     }},
     { "google_api": {
+      "description":"Pull account information.",
+      "documentation":"https://developers.google.com/doubleclick-advertisers/rest/v4/accounts/get",
       "auth":"service",
       "api": "dfareporting",
       "version": "v4",
@@ -29,7 +33,7 @@
         "bigquery":{
           "auth": "service",
           "dataset":"Test",
-          "query":"SELECT DISTINCT CAST(accountId AS STRING) AS id
+          "query":"SELECT DISTINCT CAST(accountId AS STRING) AS id, CAST(profileId AS STRING) AS profileId,
             FROM `CM360_User_Profiles`
             WHERE NOT ENDS_WITH(userName, '@dcm')
             AND (ARRAY_LENGTH({accounts}) = 0 OR accountId IN UNNEST({accounts}))

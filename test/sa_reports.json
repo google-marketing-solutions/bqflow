@@ -7,6 +7,7 @@
     }},
     { "sa_report":{
       "description":"Test report download.",
+      "documentation":"https://developers.google.com/search-ads/v2/report-types/campaign",
       "auth":"service",
       "body":{
         "reportType": "campaign",

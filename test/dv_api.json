@@ -7,12 +7,12 @@
     }},
     { "google_api": {
       "description":"Pull partners.",
+      "documentation":"https://developers.google.com/display-video/api/reference/rest/v3/partners/get",
       "api": "displayvideo",
-      "version": "v2",
+      "version": "v3",
       "auth": "service",
       "function": "partners.get",
       "iterate": false,
-      "limit":3,
       "kwargs": { "partnerId":"1918039" },
       "results": {
         "bigquery": {
@@ -24,8 +24,9 @@
     }},
     { "google_api": {
       "description":"Pull advertiser.",
+      "documentation":"https://developers.google.com/display-video/api/reference/rest/v3/advertisers/list",
       "api": "displayvideo",
-      "version": "v2",
+      "version": "v3",
       "auth": "service",
       "function": "advertisers.list",
       "iterate": true,
@@ -33,7 +34,7 @@
         "bigquery": {
           "auth": "service",
           "dataset": "Test",
-          "query": "SELECT DISTINCT CAST(partnerId  AS STRING) partnerId FROM `DV360_Partners` LIMIT 3"
+          "query": "SELECT DISTINCT CAST(partnerId  AS STRING) partnerId FROM `DV360_Partners`"
         }
       },
       "results": {

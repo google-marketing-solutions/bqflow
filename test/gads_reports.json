@@ -1,0 +1,193 @@
+{
+  "tasks": [
+    { "dataset": {
+       "description":"Create Google Ads dataset.",
+       "auth": "user",
+       "dataset": "gads"
+    }},
+    { "google_api": {
+      "description":"Ad_AdGroup_Asset",
+      "documentation":"https://developers.google.com/google-ads/api/rest/reference/rest/v15/customers.googleAds/search",
+      "auth":"user",
+      "api": "googleads",
+      "version": "v15",
+      "function": "customers.googleAds.search",
+      "kwargs":{
+        "customerId":"0123456789",
+        "body": { "query":"SELECT ad_group.id, ad_group.name, ad_group.type, asset.type FROM ad_group_asset WHERE asset.type IN ('IMAGE') AND ad_group.type IN ('DISPLAY_STANDARD', 'SEARCH_DYNAMIC_ADS', 'SMART_CAMPAIGN_ADS')" }
+      },
+      "headers":{
+        "developer-token":"yourdevelopertoken",
+        "login-customer-id":"9876543210"
+      },
+      "iterate":true,
+      "results": {
+        "print":false,
+        "bigquery": {
+          "schema":[
+            { "name": "adGroup", "type": "RECORD", "mode": "REQUIRED",
+              "fields": [
+                { "name": "id", "type": "STRING", "mode": "REQUIRED" },
+                { "name": "name", "type": "STRING", "mode": "REQUIRED" },
+                { "name": "type", "type": "STRING", "mode": "REQUIRED" }
+              ]
+            },
+            { "name": "adGroupAsset", "type": "RECORD", "mode": "REQUIRED",
+              "fields": [
+                { "name": "type", "type": "STRING", "mode": "NULLABLE" }
+              ]
+            }
+          ],
+          "dataset":"gads",
+          "table":"GoogleAds_Ad_AdGroup_Asset"
+        }
+      }
+    }},
+    { "google_api": {
+      "description":"Ad_Customer",
+      "documentation":"https://developers.google.com/google-ads/api/rest/reference/rest/v15/customers.googleAds/search",
+      "auth":"user",
+      "api": "googleads",
+      "version": "v15",
+      "function": "customers.googleAds.search",
+      "kwargs":{
+        "customerId":"0123456789",
+        "body": { "query":"SELECT customer.id, customer.descriptive_name, customer.optimization_score FROM customer" }
+      },
+      "headers":{
+        "developer-token":"yourdevelopertoken",
+        "login-customer-id":"9876543210"
+      },
+      "iterate":true,
+      "results": {
+        "print":true,
+        "bigquery": {
+          "schema":[
+            { "name": "customer", "type": "RECORD", "mode": "REQUIRED",
+              "fields": [
+                { "name": "id", "type": "STRING", "mode": "REQUIRED" },
+                { "name": "descriptive_name", "type": "STRING", "mode": "NULLABLE" },
+                { "name": "optimization_score", "type": "STRING", "mode": "NULLABLE" }
+              ]
+            }
+          ],
+          "dataset":"gads",
+          "table":"GoogleAds_Ad_Customer"
+        }
+      }
+    }},
+    { "google_api": {
+      "description":"Campaign",
+      "documentation":"https://developers.google.com/google-ads/api/rest/reference/rest/v15/customers.googleAds/search",
+      "auth":"user",
+      "api": "googleads",
+      "version": "v15",
+      "function": "customers.googleAds.search",
+      "kwargs":{
+        "customerId":"0123456789",
+        "body": { "query":"SELECT campaign.id, campaign.name, campaign.advertising_channel_sub_type, campaign.advertising_channel_type, segments.ad_network_type FROM campaign" }
+      },
+      "headers":{
+        "developer-token":"yourdevelopertoken",
+        "login-customer-id":"9876543210"
+      },
+      "iterate":true,
+      "results": {
+        "print":false,
+        "bigquery": {
+          "schema":[
+            { "name": "campaign", "type": "RECORD", "mode": "REQUIRED",
+              "fields": [
+                { "name": "id", "type": "STRING", "mode": "REQUIRED" },
+                { "name": "name", "type": "STRING", "mode": "REQUIRED" },
+                { "name": "advertisingChannelType", "type": "STRING", "mode": "NULLABLE" },
+                { "name": "advertisingChannelSubType", "type": "STRING", "mode": "NULLABLE" }
+              ]
+            },
+            { "name": "segments", "type": "RECORD", "mode": "REQUIRED",
+              "fields": [
+                { "name": "adNetworkType", "type": "STRING", "mode": "NULLABLE" }
+              ]
+            }
+          ],
+          "dataset":"gads",
+          "table":"GoogleAds_Ad_Campaign"
+        }
+      }
+    }},
+    { "google_api": {
+      "description":"Ad_Group",
+      "documentation":"https://developers.google.com/google-ads/api/rest/reference/rest/v15/customers.googleAds/search",
+      "auth":"user",
+      "api": "googleads",
+      "version": "v15",
+      "function": "customers.googleAds.search",
+      "kwargs":{
+        "customerId":"0123456789",
+        "body": { "query":"SELECT ad_group.id, ad_group.name, ad_group.ad_rotation_mode FROM ad_group"}
+      },
+      "headers":{
+        "developer-token":"yourdevelopertoken",
+        "login-customer-id":"9876543210"
+      },
+      "iterate":true,
+      "results": {
+        "print":false,
+        "bigquery": {
+          "schema":[
+            { "name": "adGroup", "type": "RECORD", "mode": "REQUIRED",
+              "fields": [
+                { "name": "id", "type": "STRING", "mode": "REQUIRED" },
+                { "name": "name", "type": "STRING", "mode": "REQUIRED" },
+                { "name": "adRotationMode", "type": "STRING", "mode": "NULLABLE" }
+              ]
+            }
+          ],
+          "dataset":"gads",
+          "table":"GoogleAds_Ad_Group"
+        }
+      }
+    }},
+    { "google_api": {
+      "description":"Ad_Group_Ad",
+      "documentation":"https://developers.google.com/google-ads/api/rest/reference/rest/v15/customers.googleAds/search",
+      "auth":"user",
+      "api": "googleads",
+      "version": "v15",
+      "function": "customers.googleAds.search",
+      "kwargs":{
+        "customerId":"0123456789",
+        "body": { "query":"SELECT ad_group.id, ad_group.name, ad_group_ad.ad_strength FROM ad_group_ad"}
+      },
+      "headers":{
+        "developer-token":"yourdevelopertoken",
+        "login-customer-id":"9876543210"
+      },
+      "iterate":true,
+      "results": {
+        "print":false,
+        "bigquery": {
+          "schema":[
+            { "name": "adGroup", "type": "RECORD", "mode": "REQUIRED",
+              "fields": [
+                { "name": "id", "type": "STRING", "mode": "REQUIRED" },
+                { "name": "name", "type": "STRING", "mode": "REQUIRED" }
+              ]
+            },
+            { "name": "adGroupAd", "type": "RECORD", "mode": "REQUIRED",
+              "fields": [
+                { "name": "ad", "type": "RECORD", "mode": "REQUIRED",
+                  "fields": [
+                    { "name": "ad_strength", "type": "STRING", "mode": "NULLABLE" }
+                  ]
+                }
+              ]
+            }
+          ],
+          "dataset":"gads",
+          "table":"GoogleAds_Ad_Group_Ad"
+        }
+      }
+    }}
+  ]
+}

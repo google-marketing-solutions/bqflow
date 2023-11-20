@@ -1,4 +1,5 @@
 {
+  "documentation":"https://github.com/google-marketing-solutions/bqflow#logs",
   "log":{ "bigquery":{ "auth":"service", "dataset":"Test", "table":"BQFlow", "disposition":"WRITE_TRUNCATE" }},
   "tasks":[
     { "dataset": {

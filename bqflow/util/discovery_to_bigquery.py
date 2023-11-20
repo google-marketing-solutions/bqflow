@@ -311,10 +311,11 @@ class Discovery_To_BigQuery():
       if '$ref' in value:
         ref = value['$ref']
         parents.setdefault(ref, 0)
-
         if parents[ref] < self.recursion_depth:
           parents[ref] += 1
-          from_json[key] = self.to_json(from_api=self.api_document['schemas'][ref]['properties'], parents=parents)
+          del value['$ref']
+          value['type'] = 'dict'
+          value['object'] = self.to_json(from_api=self.api_document['schemas'][ref]['properties'], parents=parents)
           parents[ref] -= 1
         else:
           from_json[key] = None
@@ -353,10 +354,10 @@ class Discovery_To_BigQuery():
       # when the entry is { "type":"object", "someObject":{..} }, this ignores "type" artifact
       if not isinstance(value, dict): continue
 
-      if value.get('type', 'record') == 'record':
+      if value['type'] == 'dict':
         fields.append('%sSTRUCT(\n%s\n%s) AS %s' % (
           spaces,
-          self.to_struct(from_json=value, indent=indent+2),
+          self.to_struct(from_json=value['object'], indent=indent+2),
           spaces,
           key
         ))
@@ -376,7 +377,7 @@ class Discovery_To_BigQuery():
             key
           ))
       else:
-        fields.append('%s%s AS %s' % (spaces, value['type'].upper(), key))
+        fields.append('%sCAST(NULL AS %s) AS %s' % (spaces, value['type'].upper(), key))
 
     return ',\n'.join(fields)
 

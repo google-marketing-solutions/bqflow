@@ -1,0 +1,53 @@
+{
+  "tasks": [
+    { "dataset":{
+      "description":"Create dataset.",
+      "auth":"service",
+      "dataset":"Test"
+    }},
+    { "google_api": {
+      "description":"Pull all accounts.",
+      "documentation":"https://developers.google.com/analytics/devguides/config/admin/v1/rest/v1beta/accounts/list",
+      "api": "analyticsadmin",
+      "auth": "service",
+      "function": "accounts.list",
+      "version": "v1beta",
+      "iterate": true,
+      "kwargs": {},
+      "results": {
+        "bigquery": {
+          "auth": "service",
+          "dataset": "Test",
+          "table": "GA360_Accounts"
+        }
+      }
+    }},
+    { "google_api": {
+      "description":"Pull a sample report.",
+      "documentation":"https://developers.google.com/analytics/devguides/reporting/core/v4/rest/v4/reports/batchGet",
+      "auth":"service",
+      "api": "analytics",
+      "version": "v4",
+      "function": "reports.batchGet",
+      "iterate":true,
+      "kwargs":{
+        "body":{
+          "reportRequests":[{
+            "viewId":"YOUROWNIDHERE",
+            "dateRanges":[ { "startDate":"2023-06-15", "endDate":"2023-06-30" }],
+            "metrics":[ { "expression":"ga:sessions" }],
+            "dimensions": [ { "name":"ga:browser" }]
+          }]
+        }
+      },
+      "results": {
+        "bigquery": {
+          "auth":"service",
+          "dataset":"Test",
+          "table": "GA_Browser_Report"
+        }
+      }
+
+    }}
+  ]
+}

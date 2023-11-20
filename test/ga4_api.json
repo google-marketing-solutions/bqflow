@@ -1,0 +1,49 @@
+{
+  "tasks": [
+    { "dataset":{
+      "description":"Create dataset.",
+      "auth":"user",
+      "dataset":"Test"
+    }},
+    { "google_api": {
+      "description":"Pull accounts.",
+      "documentation":"https://developers.google.com/analytics/devguides/config/admin/v1/rest/v1beta/accounts/list",
+      "api": "analyticsadmin",
+      "auth": "user",
+      "function": "accounts.list",
+      "version": "v1beta",
+      "iterate": true,
+      "kwargs": {},
+      "results": {
+        "bigquery": {
+          "auth": "user",
+          "dataset": "Test",
+          "table": "GA360_Accounts"
+        }
+      }
+    }},
+    { "google_api": {
+      "description":"Pull properties.",
+      "documentation":"https://developers.google.com/analytics/devguides/config/admin/v1/rest/v1beta/properties/list",
+      "api": "analyticsadmin",
+      "auth": "user",
+      "function": "properties.list",
+      "version": "v1beta",
+      "iterate": true,
+      "kwargs_remote": {
+        "bigquery": {
+          "auth": "user",
+          "dataset": "Test",
+          "query": "SELECT DISTINCT CONCAT('parent:', name) AS filter FROM `GA360_Accounts`"
+        }
+      },
+      "results": {
+        "bigquery": {
+          "auth": "user",
+          "dataset": "Test",
+          "table": "GA360_Properties"
+        }
+      }
+    }}
+  ]
+}
