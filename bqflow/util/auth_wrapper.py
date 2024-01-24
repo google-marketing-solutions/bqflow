@@ -252,3 +252,11 @@ class CredentialsUserWrapper(CredentialsUser):
         print('ERROR:', str(e))
         print('Attempting to auth again...')
         self.load_flow()
+
+  def CreateHttpHeader(self):
+    '''Compatibility with Ad Manager Client: https://github.com/googleads/googleads-python-lib/blob/main/googleads/oauth2.py#L61
+    '''
+    oauth2_header = {}
+    self.refresh()
+    self.apply(oauth2_header)
+    return oauth2_header
