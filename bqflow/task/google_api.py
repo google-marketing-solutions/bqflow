@@ -33,7 +33,7 @@ Example Read DV360 Partner Name and Id Into BigQuery:
       "api": "displayvideo",
       "version": "v1",
       "function": "partners.list",
-      "kwargs": {"fields":"partners.displayName,partners.partnerId,nextPageToken"},
+      "kwargs": {"fields": "partners.displayName,partners.partnerId,nextPageToken"},
       "results": {
         "bigquery": {
           "dataset": "DV_Barnacle",
@@ -42,24 +42,24 @@ Example Read DV360 Partner Name and Id Into BigQuery:
       }
     }}
 
-Example Read DV360 Advertisers defined in another BigQuery table and append the advertiserId:
+Example Read DV360 Advertisers from a BigQuery table and append the advertiserId:
 
     { "google_api": {
       "auth": "user",
       "api": "displayvideo",
       "version": "v1",
       "function": "advertisers.lineItems.list",
-      "kwargs_remote":{
-        "bigquery":{
-          "dataset":"DV_Targeting_Audit",
-          "query":"SELECT CAST(advertiserId AS STRING) AS advertiserId FROM `DV_Targeting_Audit.DV_Advertisers`;",
-          "legacy":false
+      "kwargs_remote": {
+        "bigquery": {
+          "dataset": "DV_Targeting_Audit",
+          "query": "SELECT CAST(advertiserId AS STRING) AS advertiserId FROM `DV_Targeting_Audit.DV_Advertisers`;",
+          "legacy": false
         }
       },
-      "append":[
+      "append": [
          { "name": "advertiserId", "type": "INTEGER", "mode": "REQUIRED" }
       ],
-      "iterate":true,
+      "iterate": true,
       "results": {
         "bigquery": {
           "dataset": "DV_Targeting_Audit",
@@ -75,10 +75,10 @@ Example Write Insertion Orders into DV360 from BigQuery:
       "api": "displayvideo",
       "version": "v1",
       "function": "advertisers.insertionOrders.patch",
-      "kwargs_remote":{
-        "bigquery":{
-          "dataset":"CM_DV_Demo",
-          "table":"DV_IO_Patch"
+      "kwargs_remote": {
+        "bigquery": {
+          "dataset": "CM_DV_Demo",
+          "table": "DV_IO_Patch"
         }
       },
       "results": {
@@ -91,62 +91,36 @@ Example Write Insertion Orders into DV360 from BigQuery:
 """
 
 import traceback
+from collections.abc import Mapping, Sequence, Iterator
 
 from googleapiclient.errors import HttpError
 
 from bqflow.util.bigquery_api import BigQuery
+from bqflow.util.configuration import Configuration
 from bqflow.util.data import get_rows
 from bqflow.util.data import put_rows
-from bqflow.util.cm_api import get_profile_for_api
-from bqflow.util.google_api import API
 from bqflow.util.discovery_to_bigquery import Discovery_To_BigQuery
+from bqflow.util.google_api import API_Auto
+from bqflow.util.log import Log
 
 
-def google_api_initilaize(config, api_call, alias=None):
-  """Some Google API calls require a lookup or pre-call, add it here.
-
-  Modifies the API call before actual execution with any data
-  specifically required by an endpoint.  Currently:
-
-    > dfa-reporting - look up user profile and add to call.
-
-  Args:
-    api_call (dict): the JSON for the API call as defined in recipe.
-    alias (string): mostly used to signal a list behavior (change to iterate in future?)
-
-  Returns (dict):
-    A modified JSON with additional API values added.
-    Currently mostly used by dfareporting API to add profile and account.
-
-  Raises:
-    ValueError: If a required key in the recipe is missing.
-  """
-
-  if api_call['function'].endswith('list') or alias == 'list':
-    api_call['iterate'] = True
-
-  # speical helper for CM360 API, determines profileId based on accountId
-  if api_call['api'] == 'dfareporting' and 'accountId' in api_call.get('kwargs', {}):
-    api_call['kwargs']['profileId'] = get_profile_for_api(
-      config,
-      api_call['auth'],
-      api_call['kwargs']['accountId']
-    )
-    del api_call['kwargs']['accountId']
-
-
-def google_api_build_results(config, auth, api_call, results):
+def google_api_build_results(
+  config: Configuration,
+  auth: str,
+  api_call: Mapping,
+  results: Mapping
+) -> Mapping:
   """Builds the BigQuery table to house the Google API call results.
 
   Optional piece of the recipe, will create a BigQuery table for results.
   Takes results, which defines a bigquery endpoint, and adds fields.
 
   Args:
-    auth (string): either "user" or "service" to make the BigQuery call.
-    api_call (dict): the JSON for the API call as defined in recipe.
-    results (dict): defines where the data will be written
+    auth: either 'user' or 'service' to make the BigQuery call.
+    api_call: the JSON for the API call as defined in recipe.
+    results: defines where the data will be written
 
-  Returns (dict):
+  Returns:
     A modified results JSON with additional API values added.
 
   Raises:
@@ -182,21 +156,24 @@ def google_api_build_results(config, auth, api_call, results):
       results['bigquery']['dataset'],
       results['bigquery']['table'],
       results['bigquery']['schema'],
-      overwrite=False,
-      expiration_days=results['bigquery'].get('expiration_days')
+      overwrite = False,
+      expiration_days = results['bigquery'].get('expiration_days')
     )
 
-  #print('SCHEMA', results['bigquery']['schema'])
-  #exit()
   return results
 
 
-def google_api_append(schema, values, rows):
+def google_api_append(
+  schema: Sequence,
+  values: Mapping,
+  rows: Mapping
+) -> Iterator[Mapping]:
   """Append columns to the rows containing the kwargs used to call the API.
+
   Args:
-    schema (dict): name of the key to use for the api arguments
-    values (dict): the kwargs used to call the API
-    rows (list): a list of rows to add the prefix to each one
+    schema: name of the key to use for the api arguments
+    values: the kwargs used to call the API
+    rows: a list of rows to add the prefix to each one
 
   Returns (list):
     A generator containing the rows
@@ -208,26 +185,31 @@ def google_api_append(schema, values, rows):
     yield row
 
 
-def google_api_execute(config, auth, api_call, results, append=None):
+def google_api_execute(
+  config: Configuration,
+  api_call: Mapping,
+  results: Mapping,
+  append: Mapping = None
+) -> None:
   """Execute the actual API call and write to the end points defined.
 
   The API call is completely defined at this point.
   The results and error definition is optional.
 
   Args:
-    auth (string): either "user" or "service" to make the API call.
-    api_call (dict): the JSON for the API call as defined in recipe.
-    results (dict): defines where the data will be written
-    append (dict): optional parameters to append to each row, given as BQ schema
+    config: credentials and authentication settings
+    api_call: the JSON for the API call as defined in recipe.
+    results: defines where the data will be written
+    append: optional parameters to append to each row, given as BQ schema
 
-  Returns (dict):
+  Returns:
     None, all data is transfered between API / BigQuery
 
   Raises:
     ValueError: If a required key in the recipe is missing.
   """
 
-  rows = API(config, api_call).execute()
+  rows = API_Auto(config, api_call).execute()
 
   if results:
     # check if single object needs conversion to rows
@@ -239,15 +221,19 @@ def google_api_execute(config, auth, api_call, results, append=None):
       rows = [[r] for r in rows]
 
     if config.verbose:
-      print('.', end='', flush=True)
+      print('.', end = '', flush = True)
 
     if append:
       rows = google_api_append(append, api_call['kwargs'], rows)
 
-    yield from map(lambda r: Discovery_To_BigQuery.clean(r), rows)
+    yield from rows
 
 
-def google_api(config, log, task):
+def google_api(
+  config: Configuration,
+  log: Log,
+  task: Mapping
+) -> Iterator[Mapping]:
   """Task handler for recipe, delegates all JSON parameters to functions.
 
   Executes the following steps:
@@ -263,7 +249,9 @@ def google_api(config, log, task):
     kwargs_remote - values loaded from a source such as BigQuery.
 
   Args:
-    None, all parameters are exposed via task.
+    config: credentials and authentication settings
+    log: logger that can write to bigquery or stdout
+    task: all parameters to the API call
 
   Returns:
     None, all data is read and written as a side effect.
@@ -314,7 +302,7 @@ def google_api(config, log, task):
       config,
       task['auth'],
       task['kwargs_remote'],
-      as_object=True
+      as_object = True
     )
 
   # no parameters, ensures at least one call is made
@@ -325,17 +313,15 @@ def google_api(config, log, task):
     # loop through paramters and make possibly multiple API calls
     for kwargs in kwargs_list:
       api_call['kwargs'] = kwargs
-      google_api_initilaize(config, api_call, task.get('alias'))
 
       try:
         yield from google_api_execute(
           config,
-          task['auth'],
           api_call,
           result_table,
           task.get('append')
         )
-    
+
         log.write(
           'OK',
           task.get('description', '{}.{}.{}@{}'.format(
@@ -360,7 +346,7 @@ def google_api(config, log, task):
         )
         if config.verbose:
           traceback.print_exc()
-    
+
   results = put_rows(
     config,
     task['auth'],

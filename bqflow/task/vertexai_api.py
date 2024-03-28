@@ -16,43 +16,45 @@
 #
 ###########################################################################
 
-'''
-This task calls the VERTEX API client and passes parameters for running a model.
+"""This task calls the VERTEX API client passing parameters for running a model.
+
+https://github.com/GoogleCloudPlatform/vertex-ai-samples/blob/main/notebooks/community/bigquery_ml/bq_ml_with_vision_translation_nlp.ipynb
 
 Input can be given using a BigQuery query or hard coded parameters.  This allows
 running groups of prompts and condolidates them into a single results table.
 
 Calling JSON (add this to the workflow):
 
-  { "vertexai_api":{
-    "auth":"user",
-    "location":"us-central1",
-    "model":{
-      "class":"vertexai.preview.language_models.TextGenerationModel",
-      "name":"text-bison@001",
-      "type":"pretrained"
+  { "vertexai_api": {
+    "auth": "user",
+    "location": "us-central1",
+    "model": {
+      "class": "vertexai.preview.language_models.TextGenerationModel",
+      "name": "text-bison@001",
+      "type": "pretrained"
     },
-    "destination":{
-      "bigquery":{
-        "dataset":"cse_hackathon",
-        "table":"VERTEX_Text_Data",
-        "schema":[
-          { "name":"URI", "type":"STRING", "mode":"REQUIRED" },
-          { "name":"Text", "type":"STRING", "mode":"REQUIRED" }
+    "destination": {
+      "drive": "1sknq05IWjBd_c0otU1NiXKaFxSctEEft",
+      "bigquery": {
+        "dataset": "cse_hackathon",
+        "table": "VERTEX_Text_Data",
+        "schema": [
+          { "name": "URI", "type": "STRING", "mode": "REQUIRED" },
+          { "name": "Text", "type": "STRING", "mode": "REQUIRED" }
         ]
       }
     },
-    "kwargs_remote":{
-      "bigquery":{
-        "dataset":"cse_hackathon",
-        "query":"SELECT lineItemId AS uri, STRUCT(0 AS temperature, 1024 AS max_output_tokens, 0.8 AS top_p, 40 AS top_k, 'Write Something' AS Pro AS prompt) AS parameters
-           FROM `DV360_LineItems_Targeting`
+    "kwargs_remote": {
+      "bigquery": {
+        "dataset": "cse_hackathon",
+        "query": "SELECT lineItemId AS uri, 0 AS temperature, 1024 AS max_output_tokens, 0.8 AS top_p, 40 AS top_k, 'Write Something' AS Pro AS prompt FROM `DV360_LineItems_Targeting`
         "
       }
     }
   }}
-'''
+"""
 
+from collections.abc import Mapping, Sequence, Iterator
 import importlib
 
 try:
@@ -62,65 +64,91 @@ except ModuleNotFoundError as e:
 
 
 from bqflow.util.auth import get_credentials
+from bqflow.util.configuration import Configuration
 from bqflow.util.data import get_rows, put_rows
+from bqflow.util.drive import Drive
+from bqflow.util.log import Log
 
-# is this faster: https://github.com/GoogleCloudPlatform/vertex-ai-samples/blob/main/notebooks/community/bigquery_ml/bq_ml_with_vision_translation_nlp.ipynb
 
-def vertexai_api(config, log, task):
+def vertexai_api(
+  config: Configuration,
+  log: Log,
+  task: Mapping
+) -> Iterator[Mapping]:
   """A wrapper for the Vertex API client allowing calls from workflows.
 
   This wrapper consolidates multiple calls into a single table.
 
   Args:
-    config (class): an object conatining the credentials and project settings
-    log (class): an object that can be logged to.
-    task (dict): the parameters passed from the workflow (see top level doc).
+    config: an object conatining the credentials and project settings
+    log: an object that can be logged to.
+    task: the parameters passed from the workflow (see top level doc).
 
-  Returns (list):
+  Returns:
     A list of rows with the passed in schema.
   """
 
   # authenticate
   vertexai.init(
-    project=config.project,
-    location=task['location'],
-    credentials=get_credentials(config, task['auth'])
+    project = config.project,
+    location = task['location'],
+    credentials = get_credentials(config, task['auth'])
   )
 
   # get model
   import_path, import_class = task['model']['class'].rsplit('.', 1)
   model_class = getattr(importlib.import_module(import_path), import_class)
 
-  if task['model']['type'] == "tuned":
+  # get function
+  if task['model']['type'] == 'tuned':
     model = model_class.get_tuned_model(task['model']['name'])
+    model_function = getattr(model, task['model']['function'])
   else:
-    model = model_class.from_pretrained(task['model']['name'])
+    try:
+      model = model_class.from_pretrained(task['model']['name'])
+    except AttributeError:
+      model = model_class(task['model']['name'])
+    model_function = getattr(model, task['model']['function'])
 
   # get parameters
   if 'kwargs' in task:
-    if isinstance(task['kwargs'], (list, tuple)):
-      kwargs_list = task['kwargs']
-    else:
-      kwargs_list = [task['kwargs']]
-
+    kwargs_list = task['kwargs'] if isinstance(
+      task['kwargs'],
+      (list, tuple)
+    ) else [task['kwargs']]
   elif 'kwargs_remote' in task:
     kwargs_list = get_rows(
       config,
       task['auth'],
       task['kwargs_remote'],
-      as_object=True
+      as_object = True
     )
 
   # write results
   def vertex_api_combine():
     for kwargs in kwargs_list:
       if config.verbose:
-        print('.', end='', flush=True)
-      yield kwargs['uri'], model.predict(**kwargs['parameters'])
+        print('.', end = '', flush = True)
+      yield kwargs['uri'], model_function(**kwargs['parameters'])
 
-  return put_rows(
-    config = config,
-    auth = task['auth'],
-    destination = task['destination'],
-    rows = vertex_api_combine()
-  )
+  if 'bigquery' in task['destination']:
+    return put_rows(
+      config = config,
+      auth = task['auth'],
+      destination = task['destination'],
+      rows = vertex_api_combine()
+    )
+  elif 'drive' in task['destination']:
+    for uri, images in vertex_api_combine():
+      for index, image in enumerate(images):
+        Drive(config, task['auth']).file_create(
+          name = f'{uri}-{index}.png',
+          data = image._image_bytes,
+          parent = task['destination']['drive'],
+          overwrite = True
+        )
+  else:
+    raise NotImplementedError(
+      'The destination parameter must include "bigquery" or "drive".'
+      'See bqflow/task/vertex_api.py for examples.'
+    )
