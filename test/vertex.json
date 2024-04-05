@@ -1,0 +1,70 @@
+{
+  "tasks":[
+    { "dataset": {
+      "description":"Create test dataset.",
+      "auth": "user",
+      "dataset": "Test"
+    }},
+    { "vertexai_api":{
+      "description":"Generate images using vertext imagen model.",
+      "auth":"user",
+      "location":"us-central1",
+      "model":{
+        "class":"vertexai.preview.vision_models.ImageGenerationModel",
+        "name":"imagegeneration@005",
+        "function":"_generate_images",
+        "type":"pretrained"
+      },
+      "destination":{
+        "drive":"1sknq05IWjBd_c0otU1NiXKaFxSctEEeo"
+      },
+      "kwargs_remote": {
+        "bigquery":{
+          "dataset": "Test",
+          "query": "
+            SELECT *
+            FROM UNNEST([
+              STRUCT('puppy' AS uri, STRUCT(1 AS number_of_images, 1 AS seed, 'Picture of a cute puppy.' AS prompt) AS parameters),
+              STRUCT('puppy' AS uri, STRUCT(1 AS number_of_images, 1 AS seed, 'Picture of a cute kitten.' AS prompt) AS parameters),
+              STRUCT('puppy' AS uri, STRUCT(1 AS number_of_images, 1 AS seed, 'Picture of a cute duckling.' AS prompt) AS parameters)
+            ])
+          "
+        }
+      }
+    }},
+    { "vertexai_api": {
+      "description":"Generate text using vertext imagen model.",
+      "auth": "user",
+      "location": "us-central1",
+      "model": {
+        "class": "vertexai.preview.language_models.TextGenerationModel",
+        "name": "text-bison-32k@002",
+        "function":"predict",
+        "type": "pretrained"
+      },
+      "destination": {
+        "bigquery": {
+          "dataset": "Test",
+          "table": "VERTEX_Text",
+          "schema": [
+            { "name": "URI", "type": "STRING", "mode": "REQUIRED" },
+            { "name": "Text", "type": "STRING", "mode": "REQUIRED" }
+          ]
+        }
+      },
+      "kwargs_remote": {
+        "bigquery": {
+          "dataset": "cse_hackathon",
+          "query": "
+            SELECT *
+            FROM UNNEST([
+              STRUCT('puppy' AS uri, STRUCT(1024 AS max_output_tokens, 0.8 AS top_p, 'Describe a cute puppy using a sentence.' AS prompt) AS parameters),
+              STRUCT('kitten' AS uri, STRUCT(1024 AS max_output_tokens, 0.8 AS top_p, 'Describe a cute kitten using a sentence.' AS prompt) AS parameters),
+              STRUCT('duckling' AS uri, STRUCT(1024 AS max_output_tokens, 0.8 AS top_p, 'Describe a cute duckling using a sentence.' AS prompt) AS parameters)
+            ])
+          "
+        }
+      }
+    }}
+  ]
+}

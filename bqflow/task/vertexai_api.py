@@ -23,7 +23,37 @@ https://github.com/GoogleCloudPlatform/vertex-ai-samples/blob/main/notebooks/com
 Input can be given using a BigQuery query or hard coded parameters.  This allows
 running groups of prompts and condolidates them into a single results table.
 
-Calling JSON (add this to the workflow):
+Calling image generation:
+
+  { "vertexai_api":{
+    "description":"Generate images using vertext imagen model.",
+    "auth":"user",
+    "location":"us-central1",
+    "model":{
+      "class":"vertexai.preview.vision_models.ImageGenerationModel",
+      "name":"imagegeneration@005",
+      "function":"_generate_images",
+      "type":"pretrained"
+    },
+    "destination":{
+      "drive":"1sknq05IWjBdic2otU1NiXKaFxSctffeo"
+    },
+    "kwargs_remote": {
+      "bigquery":{
+        "dataset": "BQFlowVertex",
+        "query": "
+          SELECT *
+          FROM UNNEST([
+            STRUCT('puppy' AS uri, STRUCT(1 AS number_of_images, 1 AS seed, 'Picture of a cute puppy.' AS prompt) AS parameters),
+            STRUCT('kitten' AS uri, STRUCT(1 AS number_of_images, 1 AS seed, 'Picture of a cute kitten.' AS prompt) AS parameters),
+            STRUCT('duckling' AS uri, STRUCT(1 AS number_of_images, 1 AS seed, 'Picture of a cute duckling.' AS prompt) AS parameters)
+          ])
+        "
+      }
+    }
+  }}
+
+Calling text generation:
 
   { "vertexai_api": {
     "auth": "user",
@@ -34,10 +64,9 @@ Calling JSON (add this to the workflow):
       "type": "pretrained"
     },
     "destination": {
-      "drive": "1sknq05IWjBd_c0otU1NiXKaFxSctEEft",
       "bigquery": {
-        "dataset": "cse_hackathon",
-        "table": "VERTEX_Text_Data",
+        "dataset": "BQFlowVertex",
+        "table": "VERTEX_TextData",
         "schema": [
           { "name": "URI", "type": "STRING", "mode": "REQUIRED" },
           { "name": "Text", "type": "STRING", "mode": "REQUIRED" }
@@ -47,7 +76,13 @@ Calling JSON (add this to the workflow):
     "kwargs_remote": {
       "bigquery": {
         "dataset": "cse_hackathon",
-        "query": "SELECT lineItemId AS uri, 0 AS temperature, 1024 AS max_output_tokens, 0.8 AS top_p, 40 AS top_k, 'Write Something' AS Pro AS prompt FROM `DV360_LineItems_Targeting`
+        "query": "
+          SELECT *
+          FROM UNNEST([
+            STRUCT('puppy' AS uri, STRUCT(1024 AS max_output_tokens, 0.8 AS top_p, 'Picture of a cute puppy.' AS prompt) AS parameters),
+            STRUCT('kitten' AS uri, STRUCT(1024 AS max_output_tokens, 0.8 AS top_p, 'Picture of a cute kitten.' AS prompt) AS parameters),
+            STRUCT('duckling' AS uri, STRUCT(1024 AS max_output_tokens, 0.8 AS top_p, 'Picture of a cute duckling.' AS prompt) AS parameters)
+          ])
         "
       }
     }
@@ -136,7 +171,10 @@ def vertexai_api(
       config = config,
       auth = task['auth'],
       destination = task['destination'],
-      rows = vertex_api_combine()
+      rows = [
+        [response[0], response[1].text.strip()]
+        for response in vertex_api_combine()
+      ]
     )
   elif 'drive' in task['destination']:
     for uri, images in vertex_api_combine():
