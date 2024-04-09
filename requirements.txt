@@ -24,3 +24,4 @@ google-cloud-bigquery
 psutil
 python-dateutil
 pytz
+typing-extensions

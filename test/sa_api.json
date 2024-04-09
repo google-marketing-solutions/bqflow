@@ -1,0 +1,65 @@
+{
+  "tasks": [
+    { "dataset": {
+      "description": "Create Test dataset.",
+      "auth": "service",
+      "dataset": "Test"
+    }},
+    { "google_api": {
+      "description": "Pull all customer identifiers.",
+      "documentation": "https://developers.google.com/search-ads/reporting/api/reference/rest",
+      "auth": "user",
+      "api": "searchads360",
+      "version": "v0",
+      "function": "customers.listAccessibleCustomers",
+      "iterate": true,
+      "kwargs": {},
+      "results": {
+        "bigquery": {
+          "auth": "service",
+          "dataset": "Test",
+          "table": "SA360_Customers",
+          "format": "CSV",
+          "schema":[
+            { "name": "customerId", "type": "STRING" }
+          ]
+        }
+      }
+    }},
+    { "google_api": {
+      "description": "Pull a query for each customer.",
+      "documentation": "https://developers.google.com/search-ads/reporting/api/reference/rest/v0/customers.searchAds360/search",
+      "auth": "user",
+      "api": "searchads360",
+      "version": "v0",
+      "function": "customers.searchAds360.search",
+      "iterate": true,
+      "kwargs_remote":{
+        "bigquery":{
+          "auth": "service",
+          "dataset": "Test",
+          "query": "
+            SELECT
+              REPLACE(customerId, 'customers/','') AS customerId,
+              STRUCT('SELECT customer.id, customer.status FROM customer' AS query) AS body
+            FROM `SA360_Customers`
+          "
+        }
+      },
+      "results": {
+        "bigquery": {
+          "auth": "service",
+          "dataset": "Test",
+          "table": "SA360_Customer_Details",
+          "schema": [
+            { "name": "customer", "type": "RECORD", "mode": "REQUIRED", "fields": [
+              { "name": "id", "type": "STRING", "mode": "REQUIRED" },
+              { "name": "resourceName", "type": "STRING", "mode": "REQUIRED" },
+              { "name": "status", "type": "STRING", "mode": "NULLABLE" }
+            ]}
+          ]
+        }
+      }
+    }}
+  ]
+}
