@@ -53,8 +53,8 @@ def get_workflow(filepath=None, filecontent=None, man_dict=None):
     
     # OMG edit to iterate through CSV values of manager & submanager
     if man_dict:  
-      data['tasks'][1]['google_api']['kwargs']['customerId'] = man_dict["submanager"]
-      data['tasks'][1]['google_api']['headers']['login-customer-id'] = man_dict["manager"]  
+      data['tasks'][1]['google_api']['kwargs']['customerId'] = man_dict["customer_id"]
+      data['tasks'][1]['google_api']['headers']['login-customer-id'] = man_dict["manager_customer_id"]  
 
     return data
 
@@ -270,10 +270,11 @@ def main():
 
     for index, row in ids.iterrows():
       man_dict = { 
-                   'manager': str(row["New Manager Customer ID"]),
-                   'submanager' : str(row["New Sub-Manager Customer ID"])
+                   'manager_customer_id': str(row["manager_id"]),
+                   'customer_id' : str(row["customer_client_id"])
                    }
 
+      print (man_dict)
       workflow = get_workflow(filepath=args.workflow, man_dict=man_dict)
       execute(config, workflow, args.force, args.task)
 
