@@ -157,9 +157,9 @@ class Discovery_To_BigQuery():
       elif f == 'date-time':
         return 'TIMESTAMP'
       elif f == 'int64':
-        return 'INT64'
+        return 'STRING' #'INT64' because APIs require string ids
       elif f == 'uint64':
-        return 'INT64'
+        return 'STRING' #'INT64' because APIs require string ids
       else:
         return 'STRING'
     else:
