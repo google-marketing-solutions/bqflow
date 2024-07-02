@@ -27,12 +27,12 @@ from bqflow.util.configuration import Configuration
 from bqflow.util.drive import Drive
 from bqflow.util.google_api import API_Drive
 
-from bqflow.run import get_workflow, execute
+from bqflow.task.workflow import get_workflow, execute
 
 
 class DriveRunner():
 
-  def __init__(self, config, auth):
+  def __init__(self, config:Configuration, auth: str) -> None:
     '''Construct a runner factory, providing project and authentication data.
 
     Args:

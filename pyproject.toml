@@ -1,6 +1,6 @@
 ###########################################################################
 #
-#  Copyright 2023 Google LLC
+#  Copyright 2020 Google LLC
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -16,46 +16,44 @@
 #
 ###########################################################################
 
-[tool.poetry]
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
 
+[project]
 name = 'bqflow'
-version = '0.0.2'
-license = 'Apache License, Version 2.0'
+version = '0.0.5'
 description = 'BQFlow is a Google gTech built python framework for BigQuery to Google API ETL.'
-repository = 'https://github.com/google/bqflow'
 readme = "README.md"
-
-authors = ['Paul Kenjora <kenjora@google.com>', 'Ana Esqueda <anaesqueda@google.com>']
+license = { file = "LICENSE" }
+authors = [{name = 'Paul Kenjora', email = 'kenjora@google.com'}, {name = 'Ana Esqueda', email = 'anaesqueda@google.com'}]
 keywords = ['Google', 'BigQuery', 'ETL', 'DV360', 'CM360', 'GA360', 'SA360', 'Google Ads', 'Adwords', 'BQFlow']
 classifiers = [
   'Development Status :: 4 - Beta',
   'Intended Audience :: Developers',
-  'License :: OSI Approved :: Apache Software License',
   'Natural Language :: English',
   'Programming Language :: Python :: 3',
 ]
-
-packages = [
-  { include = 'bqflow', from = '' },
-  { include = 'bqflow.util', from = 'bqflow/util' },
-  { include = 'bqflow.task', from = 'bqflow/task' },
-]
-
 requires-python = ">=3.7"
 
-[tool.poetry.scripts]
+[tool.setuptools.package-dir]
+bqflow = "bqflow"
+bqflow_scripts = "."
 
-bqflow_run = 'bqflow.run:main'
-bqflow_auth = 'bqflow.auth:main'
-bqflow_cm = 'bqflow.cm:main'
-bqflow_dv = 'bqflow.dv:main'
-bqflow_bq = 'bqflow.bq:main'
-bqflow_schedule_local = 'bqflow.schedule_local:main'
-bqflow_schedule_drive = 'bqflow.schedule_drive:main'
+[project.urls]
+Source = 'https://github.com/google/bqflow'
+Blog = 'https://kenjora.medium.com/'
 
+[project.scripts]
+bqflow_run = 'bqflow_scripts.run:main'
+bqflow_auth = 'bqflow_scripts.auth:main'
+bqflow_cm = 'bqflow_scripts.cm:main'
+bqflow_dv = 'bqflow_scripts.dv:main'
+bqflow_bq = 'bqflow_scripts.bq:main'
+bqflow_schedule_local = 'bqflow_scripts.schedule_local:main'
+bqflow_schedule_drive = 'bqflow_scripts.schedule_drive:main'
 
 [tool.poetry.dependencies]
-
 google-api-python-client = "*"
 google-auth = "*"
 google-auth-oauthlib = "*"
@@ -64,4 +62,4 @@ google-cloud-bigquery = "*"
 psutil = "*"
 python-dateutil = "*"
 pytz = "*"
-
+typing-extensions = "*"
