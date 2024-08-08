@@ -116,7 +116,7 @@ class Deployment:
                     workflow = os.path.join(path, filename)
                     # checking if it is a file
                     if os.path.isfile(workflow):
-                        command = f'python3 bqflow/run.py --workflow {workflow} {auth} -p {project} --verbose'
+                        command = f'python3 bqflow/run.py {workflow} {auth} -p {project} --verbose'
                         self.execute_command(command)
         print(f'Finished executing workflows in directory {directory}.')
 
