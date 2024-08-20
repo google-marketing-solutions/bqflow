@@ -130,7 +130,7 @@ To execute the workflows on a schedule from [Google Drive](https://www.google.co
      * Edit the VM and navigate to Management > Automation > Automation, and add:
        ```
        #!/bin/bash
-       sudo -u [YOUR USERNAME] bash -c 'python3 /home/[YOUR USERNAME]/bqflow/schedule_drive.py [DRIVE FOLDER LINK] -s DEFAULT -p [CLOUD PROJECT ID]'
+       sudo -u [YOUR USERNAME] bash -c 'python3 ~/bqflow/schedule_drive.py [DRIVE FOLDER LINK] -s DEFAULT -p [CLOUD PROJECT ID]'
        shutdown -h +1
        ```
        Find [YOUR USERNAME] on the VM by running `echo $USER`.
