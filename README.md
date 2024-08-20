@@ -69,7 +69,7 @@ To execute workflows on a schedule within a VM, follow [these instructions](http
      * **Service Account:** One you create (see below) or None, depending on setup.
      * **Firewall:** Leave unchecked, there is no need for HTTP/HTTPS.
   1. Log into the VM, the below step is optional if you get a warning message about logging in:
-     * Make sure you have at least one [VPC network](https://cloud.google.com/vpc/docs/vpc#default-network).
+     * Make sure you have at least one [VPC Network](https://console.cloud.google.com/networking/networks/list).
      * Enable SSH/IAP Firewall rule for that network, rule is browser ssh compatible:
        ```
        gcloud compute --project=[PROJECT NAME] firewall-rules create allow-ingress-from-iap --direction=INGRESS --priority=1000 --network=default --action=ALLOW --rules=tcp:22,tcp:3389 --source-ranges=35.235.240.0/20
@@ -87,7 +87,7 @@ To execute workflows on a schedule within a VM, follow [these instructions](http
      * Edit the VM and navigate to Management > Automation > Automation, and add:
        ```
        #!/bin/bash
-       sudo -u [YOUR USERNAME] bash -c 'python3 $HOME/bqflow/schedule_local.py $HOME/workflows'
+       sudo -u [YOUR USERNAME] bash -c 'python3 ~/bqflow/schedule_local.py ~/workflows'
        shutdown -h +1
        ```
        Find [YOUR USERNAME] on the VM by running `echo $USER`.
