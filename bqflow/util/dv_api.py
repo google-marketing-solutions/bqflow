@@ -18,19 +18,29 @@
 
 import re
 import time
+
+from collections.abc import Iterator
+from typing import Any, Dict, Union
 from types import GeneratorType
 from urllib.request import urlopen
 
-from bqflow.util.misc import memory_scale
-from bqflow.util.data import get_rows
+from bqflow.util.configuration import Configuration
 from bqflow.util.csv import column_header_sanitize, csv_to_rows, rows_to_csv, response_utf8_stream
+from bqflow.util.data import get_rows
 from bqflow.util.google_api import API_DBM
+from bqflow.util.misc import memory_scale
+
 
 DBM_CHUNKSIZE = memory_scale(maximum=200 * 1024**3, multiple=256 * 1024)
 RE_FILENAME = re.compile(r'.*/(.*)\?GoogleAccess')
 
-def report_get(config, auth, report_id=None, name=None):
-  """ Returns the DBM JSON definition of a report based on name or ID.
+def report_get(
+  config: Configuration,
+  auth: str,
+  report_id: int = None,
+  name: str = None
+) -> dict:
+  """Returns the DBM JSON definition of a report based on name or ID.
 
   Args:
     * auth: (string) Either user or service.
@@ -39,7 +49,6 @@ def report_get(config, auth, report_id=None, name=None):
 
   Returns:
     * JSON definition of report.
-
   """
 
   if name:
@@ -49,9 +58,13 @@ def report_get(config, auth, report_id=None, name=None):
   else:
     return API_DBM(config, auth).queries().get(queryId=report_id).execute()
 
-
-def report_filter(config, auth, body, filters):
-  """ Adds filters to a report body
+def report_filter(
+  config: Configuration,
+  auth: str,
+  body: dict,
+  filters: dict
+) -> dict:
+  """Adds filters to a report body.
 
   Filters cannot be easily added to the reports without templateing, this allows
   filters to be passed as lists.
@@ -81,20 +94,26 @@ def report_filter(config, auth, body, filters):
     * body: ( json ) modified report body
   """
 
-  new_body = body.copy()
-
-  for f, d in filters.items():
-    for v in get_rows(config, auth, d):
-      new_body['params'].setdefault('filters', []).append({
-          'type': f,
-          'value': v
+  for field, source in filters.items():
+    for value in get_rows(
+      config=config,
+      auth=auth,
+      source=source,
+      unnest=True
+    ):
+      body['params'].setdefault('filters', []).append({
+        'type': field,
+        'value': value
       })
 
-  return new_body
+  return body
 
-
-def report_build(config, auth, body):
-  """ Creates a DBM report given a JSON definition.
+def report_build(
+  config: Configuration,
+  auth: str,
+  body: dict
+) -> dict:
+  """Creates a DBM report given a JSON definition.
 
   The report will be automatically run the first time.
 
@@ -108,7 +127,6 @@ def report_build(config, auth, body):
 
   Returns:
     * JSON definition of report created or existing.
-
   """
 
   report = report_get(config, auth, name=body['metadata']['title'])
@@ -150,8 +168,14 @@ def report_build(config, auth, body):
   return report
 
 
-def report_fetch(config, auth, report_id=None, name=None, timeout=60):
-  """ Retrieves most recent DBM file JSON by name or ID, if in progress, waits for it to complete.
+def report_fetch(
+  config: Configuration,
+  auth: str,
+  report_id: int = None,
+  name: str = None,
+  timeout: int = 60
+) -> Union[dict, bool]:
+  """Retrieves most recent DBM file JSON by name or ID, if in progress, waits for it to complete.
 
   Timeout is in minutes ( retries will happen at 5 minute interval, default
   total time is 20 minutes )
@@ -166,7 +190,6 @@ def report_fetch(config, auth, report_id=None, name=None, timeout=60):
     * Report JSON if report exists and is ready.
     * True if report is in progress but not ready.
     * False if report does not exist.
-
   """
 
   if config.verbose:
@@ -188,8 +211,8 @@ def report_fetch(config, auth, report_id=None, name=None, timeout=60):
 
     try:
       report_file = next(API_DBM(
-        config,
-        auth,
+        config=config,
+        auth=auth,
         iterate=True
       ).queries().reports().list(
         queryId=report_id,
@@ -227,8 +250,13 @@ def report_fetch(config, auth, report_id=None, name=None, timeout=60):
   return False
 
 
-def report_run(config, auth, report_id=None, name=None):
-  """ Trigger a DBM report to run by name or ID.
+def report_run(
+  config: Configuration,
+  auth: str,
+  report_id: int = None,
+  name: str = None
+) -> bool:
+  """Trigger a DBM report to run by name or ID.
 
   Will do nothing if report is currently in progress.
 
@@ -243,7 +271,6 @@ def report_run(config, auth, report_id=None, name=None):
   Returns:
     * True if report run is executed
     * False otherwise
-
   """
 
   if config.verbose:
@@ -270,8 +297,13 @@ def report_run(config, auth, report_id=None, name=None):
     print('REPORT RUN SKIPPED', report_id or name)
   return False
 
-def report_files(config, auth, report_id):
-  """ Lists all the files available for a given DBM report configuration.
+
+def report_files(
+  config: Configuration,
+  auth: str,
+  report_id: int
+) -> Iterator[dict]:
+  """Lists all the files available for a given DBM report configuration.
 
   Bulletproofing:
   https://developers.google.com/bid-manager/reference/rest/v2/queries.reports
@@ -282,11 +314,11 @@ def report_files(config, auth, report_id):
 
   Returns:
     * Iterator of JSONs.
-
   """
+
   for report_file in API_DBM(
-        config,
-        auth,
+        config=config,
+        auth=auth,
         iterate=True
       ).queries().reports().list(
         queryId=report_id,
@@ -294,12 +326,15 @@ def report_files(config, auth, report_id):
       ).execute():
     yield report_file
 
-def report_file(config, auth,
-                report_id=None,
-                name=None,
-                timeout=60,
-                chunksize=DBM_CHUNKSIZE):
-  """ Retrieves most recent DBM file by name or ID, if in progress, waits for it to complete.
+def report_file(
+  config: Configuration,
+  auth: str,
+  report_id: int = None,
+  name:str = None,
+  timeout: int = 60,
+  chunksize: int = DBM_CHUNKSIZE
+) -> tuple:
+  """Retrieves most recent DBM file by name or ID, if in progress, waits for it to complete.
 
   Timeout is in minutes ( retries will happen at 1 minute interval, default
   total time is 60 minutes )
@@ -343,8 +378,13 @@ def report_file(config, auth,
       return filename, urlopen(storage_path).read().decode('UTF-8')
 
 
-def report_delete(config, auth, report_id=None, name=None):
-  """ Deletes a DBM report based on name or ID.
+def report_delete(
+  config: Configuration,
+  auth: str,
+  report_id: str = None,
+  name: int = None
+) -> None:
+  """Deletes a DBM report based on name or ID.
 
   Args:
     * auth: (string) Either user or service.
@@ -353,7 +393,6 @@ def report_delete(config, auth, report_id=None, name=None):
 
   Returns:
     * None
-
   """
 
   if config.verbose:
@@ -367,48 +406,18 @@ def report_delete(config, auth, report_id=None, name=None):
       print('DBM DELETE: No Report')
 
 
-def report_list(config, auth):
-  """ Lists all the DBM report configurations for the current credentials.
-
-  Args:
-    * auth: (string) Either user or service.
-
-  Returns:
-    * Iterator of JSONs.
-
-  """
+def report_list(
+  config: Configuration,
+  auth: str
+) -> Iterator[dict]:
+  """Lists all the DBM report configurations for the current credentials."""
 
   for query in API_DBM(config, auth, iterate=True).queries().list().execute():
     yield query
 
 
-""" Get a DV360 report as a list
-
-Args: * auth => auth from the job * report_id => the report id that wants to be
-pulled
-
-Returns:
-  * a DV360 report represented as a list
-"""
-
-
-def report_to_list(config, auth, report_id):
-  filename, report = report_file(
-      auth,
-      report_id,
-      None,  #name
-      10,  #timeout
-      DBM_CHUNKSIZE)
-
-  if report:
-    rows = report_to_rows(report)
-    rows = report_clean(rows)
-
-  return list(rows)
-
-
-def report_to_rows(report):
-  """ Helper to convert DBM files into iterator of rows, memory efficient.
+def report_to_rows(report: Iterator[list]) -> Iterator[list]:
+  """Helper to convert DBM files into iterator of rows, memory efficient.
 
   Usage example:
 
@@ -423,7 +432,6 @@ def report_to_rows(report):
 
   Returns:
     * Iterator of lists representing each row.
-
   """
 
   # if reading from stream
@@ -441,8 +449,8 @@ def report_to_rows(report):
       yield row
 
 
-def report_clean(rows):
-  """ Helper to fix DBM report issues for BigQuery and ensure schema compliance.
+def report_clean(rows: Iterator[list]) -> Iterator[list]:
+  """Helper to fix DBM report issues for BigQuery and ensure schema compliance.
 
   Memory efficiently cleans each row by fixing:
   * Strips header and footer to preserve only data rows.
@@ -467,7 +475,7 @@ def report_clean(rows):
 
   """
 
-  print('DBM Report Clean')
+  print('DBM REPORT CLEAN')
 
   first = True
   last = False
@@ -494,17 +502,16 @@ def report_clean(rows):
     else:
       # check if data studio formatting is applied reformat the dates
       row = [
-          cell.replace('/', '-') if isinstance(cell, str) and len(cell) == 4 +
-          1 + 2 + 1 + 2 and cell[4] == '/' and cell[7] == '/' else cell
-          for cell in row
+        cell.replace('/', '-') if isinstance(cell, str) and len(cell) == 4 +
+        1 + 2 + 1 + 2 and cell[4] == '/' and cell[7] == '/' else cell
+        for cell in row
       ]  # 5x faster than regexp
 
-    # remove unknown columns ( which throw off schema on import types )
+    # remove unknown columns (which throw off schema on import types)
     row = [
-        '' if cell.strip() in (
-            'Unknown',
-            '-',
-        ) else ('1000' if cell == '< 1000' else cell) for cell in row
+      '' if cell.strip() in ('Unknown', '-')
+      else ('1000' if cell == '< 1000' else cell)
+      for cell in row
     ]
 
     # return the row

@@ -268,13 +268,8 @@ def put_rows(config, auth, destination, rows):
     )
 
   elif 'file' in destination:
-    path_out, file_ext = destination['file'].rsplit('.', 1)
-    file_out = path_out + '.' + file_ext
-    if config.verbose:
-      print('SAVING', file_out)
-    makedirs_safe(parse_path(file_out))
-    with open(file_out, 'w') as save_file:
-      save_file.write(rows_to_csv(rows).read())
+    with open(destination['file'], 'w') as file:
+      file.write(rows_to_csv(rows).read())
 
   elif 'storage' in destination and destination['storage'].get(
       'bucket') and destination['storage'].get('path'):
