@@ -18,9 +18,14 @@
 #
 ###########################################################################
 
+"""BigQuery helper for performing developer tasks when using BQFlow."""
+
+from __future__ import annotations
+from typing import Any
+
+import argparse
 import json
 import textwrap
-import argparse
 
 from bqflow.util.bigquery_api import BigQuery, get_schema
 from bqflow.util.configuration import Configuration
@@ -28,18 +33,19 @@ from bqflow.util.csv import csv_to_rows
 from bqflow.util.google_api import API_BigQuery
 
 
-def dashboard_template(schema, _level=0):
-  """ Helper for creating null query used in Looker Studio.
+def dashboard_template(schema: list[dict[str, Any]], level: int = 0) -> str:
+  """Helper for creating null query used in Looker Studio.
 
-    Generates a query string that when called generates the exact
-    schema that is given as an argument.
+  Generates a query string that when called generates the exact
+  schema that is given as an argument.
 
-    Args:
-     - schema: (dict) The schema as returned by BigQuery.
-     - _level: (int) Used to track indentation, not passed by caller.
+  Args:
+    schema: The JSON schema as used by BigQuery.
+            https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#TableFieldSchema
+    level: Used to track indentation, not passed by caller.
 
-    Returns:
-      String containing the query.
+  Returns:
+    String containing the query.
   """
 
   fields = []
@@ -47,129 +53,242 @@ def dashboard_template(schema, _level=0):
   for field in schema:
     if field['type'] == 'RECORD':
       if field['mode'] == 'REPEATED':
-        fields.append('ARRAY (SELECT AS STRUCT {}) AS {}'.format(dashboard_template(field['fields'], _level + 2), field['name']))
+        fields.append(
+            'ARRAY (SELECT AS STRUCT'
+            f' {dashboard_template(field["fields"], level + 2)}) AS'
+            f' {field["name"]}'
+        )
       else:
-        fields.append('STRUCT ({}\n) AS {}'.format(dashboard_template(field['fields'], _level + 2), field['name']))
+        fields.append(
+            f'STRUCT ({dashboard_template(field["fields"], level + 2)}\n) AS'
+            f' {field["name"]}'
+        )
     else:
       fields.append('CAST(NULL AS {type}) AS {name}'.format(**field))
 
-  return ('' if _level else 'SELECT ') +  ('\n'+ ' ' * _level) + (',\n'+ ' ' * _level).join(fields)
+  return (
+      ('' if level else 'SELECT ')
+      + ('\n' + ' ' * level)
+      + (',\n' + ' ' * level).join(fields)
+  )
 
 
+def task_template(auth: str, table: dict[Any]) -> dict[Any]:
+  """Grabs view from BigQuery and embeds into a BQFlow task.
 
-def task_template(auth, table):
-  """ Grabs view from BigQuery and embeds into a BQFlow task.
+  Handles indentation and character escaping. Also replaces
+  dataset and project with a parameter field for portability.
+  Does not handle comments well, must be terminated by user.
 
-    Handles indentation and character escaping. Also replaces
-    dataset and project with a paremeter field for portability.
-    Does not handle comments well, must be terminated by user.
+  Args:
+    auth: The auth type to code into the task.
+    table: The view definition as returned by BigQuery API.
+           https://cloud.google.com/bigquery/docs/reference/rest/v2/tables
 
-    Args:
-     - table: (dict) The view definition as returned by BigQuery.
-
-    Returns:
-      Dictionary containing the BQFlow task.
+  Returns:
+    Dictionary containing the BQFlow task.
   """
 
-  task =  {
-    "bigquery":{
-      "auth":auth,
-      "from":{
-        "query":table['view']['query'].replace(table['tableReference']['projectId'] + '.', '').replace(table['tableReference']['datasetId'] + '.', '{dataset}.'),
-        "legacy":table['view']['useLegacySql'],
-        "parameters":{
-          "dataset":table['tableReference']['datasetId']
-        }
-      },
-      "to":{
-        "dataset":table['tableReference']['datasetId'],
-        "view":table['tableReference']['tableId']
+  return {
+      'bigquery': {
+          'description': (
+              f'Create the {table["tableReference"]["tableId"]} view.'
+          ),
+          'auth': auth,
+          'from': {
+              'query': table['view']['query'].replace(
+                  table['tableReference']['projectId'] + '.', ''
+              ),
+          },
+          'to': {
+              'dataset': table['tableReference']['datasetId'],
+              'view': table['tableReference']['tableId'],
+          },
       }
-    }
   }
-  return task
+
+
+def tasks_template(auth: str, table: str) -> dict:
+  """Creates a BQFlow wrapper around an individual task.
+
+  Args:
+    auth: The auth type to code into the task.
+    table: The view definition as returned by BigQuery API.
+           https://cloud.google.com/bigquery/docs/reference/rest/v2/tables
+
+  Returns:
+    Dictionary containing the BQFlow task.
+  """
+
+  return {
+      'tasks': [
+          {
+              'dataset': {
+                  'description': (
+                      'Create the'
+                      f' {table["tableReference"]["datasetId"]} dataset.'
+                  ),
+                  'auth': auth,
+                  'dataset': table['tableReference']['datasetId'],
+              }
+          },
+          task_template(auth, table),
+      ]
+  }
 
 
 def main():
   # get parameters
   parser = argparse.ArgumentParser(
-    formatter_class=argparse.RawDescriptionHelpFormatter,
-    description=textwrap.dedent("""\
+      formatter_class=argparse.RawDescriptionHelpFormatter,
+      description=textwrap.dedent("""\
     Command line to get table schema from BigQuery.
 
     Helps developers upload data to BigQuery and pull schemas.  These are the
     most common BigQuery tasks when developing solutions.
 
     Examples:
-      Display table schema: `python bigquery.py --project [id] --dataset [name] --table [name] -s [credentials]`
-      Create view task: `python bigquery.py --project [id] --dataset [name] --task [name] -s [credentials]`
-      Upload csv table: `python bigquery.py --project [id] --dataset [name] --table [name] --csv [file] --schema [file] -s [credentials]`
+      Display table schema: python bigquery.py -project [project_id] -s [credentials] -dataset [name] -table [name]
+      Create view task: python bigquery.py -p [project_id] -s [credentials] -dataset [name] -task [name] -to_task
+      Upload csv table: python bigquery.py -p [project_id] -s [credentials] -dataset [name] -table [name] -from_csv [file] -from_schema [file]
+  """),
+  )
 
-  """))
+  parser.add_argument(
+      '-user', '-u', help='Path to USER credentials json file.', default=None
+  )
+  parser.add_argument(
+      '-service',
+      '-s',
+      help='Path to SERVICE credentials json file.',
+      default=None,
+  )
+  parser.add_argument(
+      '-project', '-p', help='Name of cloud project.', default=None
+  )
 
-  parser.add_argument('--user', '-u', help='Path to USER credentials json file.', default=None)
-  parser.add_argument('--service', '-s', help='Path to SERVICE credentials json file.', default=None)
-  parser.add_argument('--project', '-p', help='Name of cloud project.', default=None)
+  parser.add_argument('-dataset', help='name of BigQuery dataset', default=None)
+  parser.add_argument(
+      '-table', '-view', help='name of BigQuery table or view', default=None
+  )
 
-  parser.add_argument( '--dataset', help='name of BigQuery dataset', default=None)
-  parser.add_argument( '--table', help='name of BigQuery table', default=None)
-  parser.add_argument( '--task', help='name of view to turn into BQFlow task', default=None)
-  parser.add_argument( '--csv', help='CSV file path', default=None)
-  parser.add_argument( '--schema', help='SCHEMA file path', default=None)
-  parser.add_argument( '--dashboard', help='Generate a dashboard query to mimic table schema.', default=None)
+  parser.add_argument(
+      '-from_csv', help='upload to table from CSV file path', default=False
+  )
+  parser.add_argument(
+      '-from_json', help='upload to table from JSON file path', default=False
+  )
+  parser.add_argument(
+      '-from_schema', help='use SCHEMA file when uploading csv', default=False
+  )
+
+  parser.add_argument(
+      '-to_task',
+      action='store_true',
+      help='print BQFlow task json',
+      default=False,
+  )
+  parser.add_argument(
+      '-to_tasks',
+      action='store_true',
+      help='print BQFlow workflow json',
+      default=False,
+  )
+  parser.add_argument(
+      '-to_dashboard',
+      action='store_true',
+      help='Generate a dashboard query that can be used as a table placeholder',
+      default=False,
+  )
 
   # initialize project
 
   args = parser.parse_args()
   config = Configuration(
-    user=args.user,
-    service=args.service,
-    project=args.project
+      user=args.user, service=args.service, project=args.project
   )
 
   auth = 'service' if args.service else 'user'
 
-  schema = json.loads(args.schema) if args.schema else None
+  if args.to_task:
+    table = (
+        API_BigQuery(config, auth)
+        .tables()
+        .get(
+            projectId=config.project, datasetId=args.dataset, tableId=args.table
+        )
+        .execute()
+    )
 
-  if args.task:
-    print(json.dumps(task_template(
-     auth,
-     API_BigQuery(config, auth).tables().get(projectId=config.project, datasetId=args.dataset, tableId=args.task).execute()
-    ), indent=2).replace('\\n', '\n'))
+    if table['type'] == 'VIEW':
+      print(
+          '   ',
+          json.dumps(task_template(auth, table), indent=2)
+          .replace('\\n', '\n')
+          .replace('\n', '\n    '),
+      )
+    else:
+      print(f'ERROR: {args.table} must be a view.')
 
-  elif args.csv:
+  elif args.to_tasks:
+    table = (
+        API_BigQuery(config, auth)
+        .tables()
+        .get(
+            projectId=config.project, datasetId=args.dataset, tableId=args.table
+        )
+        .execute()
+    )
+    if table['type'] == 'VIEW':
+      print(
+          json.dumps(tasks_template(auth, table), indent=2).replace('\\n', '\n')
+      )
+    else:
+      print(f'ERROR: {args.table} must be a view.')
 
-    with open(args.csv, 'r') as csv_file:
+  elif args.from_csv:
+    with open(args.from_csv, 'r', encoding='utf-8') as csv_file:
       rows = csv_to_rows(csv_file.read())
 
-      if not schema:
+      if args.from_schema:
+        with open(args.from_schema, 'r', encoding='utf-8') as schema_file:
+          schema = json.load(schema_file)
+
+      else:
         rows, schema = get_schema(rows)
-        print('DETECETED SCHEMA', json.dumps(schema))
+        print('DETECTED SCHEMA', json.dumps(schema))
         print('Please run again with the above schema provided.')
         exit()
 
       BigQuery(config, auth).rows_to_table(
-        config.project,
-        args.dataset,
-        args.table,
-        rows,
-        schema
+          config.project, args.dataset, args.table, rows, schema
+      )
+
+  elif args.from_json:
+    with open(args.from_json, 'r', encoding='utf-8') as json_file:
+      rows = json.load(json_file)
+
+      if args.from_schema:
+        with open(args.from_schema, 'r', encoding='utf-8') as schema_file:
+          schema = json.load(schema_file)
+
+      BigQuery(config, auth).json_to_table(
+          config.project, args.dataset, args.table, rows, schema
       )
 
   else:
     schema = BigQuery(config, auth).table_to_schema(
-      config.project,
-      args.dataset,
-      args.table or args.dashboard
+        project_id=config.project, dataset_id=args.dataset, table_id=args.table
     )
 
-    if args.dashboard:
+    if args.to_dashboard:
       print()
       print(dashboard_template(schema))
       print()
 
     else:
       print(json.dumps(schema, indent=2))
+
 
 if __name__ == '__main__':
   main()

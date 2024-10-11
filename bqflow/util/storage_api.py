@@ -133,13 +133,11 @@ def object_get_chunks(config, auth, path, chunksize=STORAGE_CHUNKSIZE, encoding=
   yield from media_download(request, chunksize, encoding)
 
 
-def object_put(config, auth, path, data, mimetype='application/octet-stream'):
-  bucket, filename = path.split(':', 1)
-
+def object_put(config, auth, bucket, path, data, mimetype='application/octet-stream'):
   media = MediaIoBaseUpload(
       data, mimetype=mimetype, chunksize=STORAGE_CHUNKSIZE, resumable=True)
   request = API_Storage(config, auth).objects().insert(
-      bucket=bucket, name=filename, media_body=media).execute(run=False)
+      bucket=bucket, name=path, media_body=media).execute(run=False)
 
   response = None
   errors = 0

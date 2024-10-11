@@ -18,32 +18,36 @@
 #
 ###########################################################################
 
-import json
-import importlib
+"""Handles workflow loading, execution, and scheduling."""
 
-from typing import Dict, Any
+from __future__ import annotations
+from typing import Any
+
+import importlib
+import json
 
 from bqflow.util.configuration import Configuration
 from bqflow.util.log import Log
 
 
-def get_workflow(filepath:str=None, filecontent:str=None) -> Any:
+def get_workflow(filepath: str = None, filecontent: str = None) -> dict[str, Any]:
   """Loads json for workflow, replaces newlines, and expands includes.
 
-    Args:
-     - filepath: (string) The local file path to the workflow json file to load.
-     - filecontent: (string) The content of thw workflow to sanitize.
+  Args:
+    filepath: The local file path to the workflow JSON file.
+    filecontent: The content of the workflow to sanitize.
 
-    Returns:
-      Dictionary of workflow file.
+  Returns:
+    Dictionary of workflow file.
+    https://github.com/google-marketing-solutions/bqflow/wiki/DV360-API-Example#workflow
 
-    Raises:
-      ValueError when there is a JSON parsing issue.
+  Raises:
+    ValueError when there is a JSON parsing issue.
   """
 
   try:
     if filecontent is None:
-      with open(filepath) as workflow_file:
+      with open(filepath, 'r', encoding='UTF-8') as workflow_file:
         filecontent = workflow_file.read()
     return json.loads(filecontent.replace('\n', ' '))
   except ValueError as e:
@@ -53,46 +57,50 @@ def get_workflow(filepath:str=None, filecontent:str=None) -> Any:
         pos += len(line) + 1
       else:
         e.lineno = count
-        e.args = ('JSON ERROR: %s LINE: %s CHARACTER: %s ERROR: %s LINE: %s' %
-          (filepath, count, e.pos - pos - 1, str(e.msg), line.strip())
-        )
+        e.args = [(
+            f'JSON ERROR: {filepath} LINE: {count} CHARACTER:'
+            f' {e.pos - pos - 1} ERROR: {str(e.msg)} LINE: {line.strip()}'
+        )]
         raise
 
 
-def auth_workflow(config:Configuration, workflow:Any) -> None:
+def auth_workflow(config: Configuration, workflow: dict[str, Any]) -> None:
   """Adjust the "auth":"user|service" parameter based on provided credentials.
 
-     Ideally the provided credentials should match the workflow credentials,
-     however, when they do not use whatever is provided and hope for the best.
+   Ideally the provided credentials should match the workflow credentials,
+   however, when they do not use whatever is provided and hope for the best.
 
-     Time saver, prevents recoding the workflow when using only one credential.
-     Also enables remote debugging recipes from drive using different credentials.
+   Time saver, prevents recoding the workflow when using only one credential.
+   Also enables remote debugging recipes from drive using different
+   credentials.
 
-     If both or no credentials are provided the workflow is unmodified.
+   If both or no credentials are provided the workflow is unmodified.
 
-    Args:
-      - config: (class) Credentials wrapper.
-      - workflow: (Recipe JSON) The JSON of a workflow.
+  Args:
+    config: Credentials wrapper.
+    workflow: The JSON of a workflow.
+    https://github.com/google-marketing-solutions/bqflow/wiki/DV360-API-Example#workflow
 
-    Returns:
-      Modified workflow with "auth" fields recursively updated.
+  Returns:
+    Modified workflow with "auth" fields recursively updated.
   """
 
-  def _auth_workflow(auth:str, workflow:Any) -> None:
+  def _auth_workflow(auth: str, workflow: dict[str, Any]) -> None:
     """Recursively finds auth in workflow and sets them.
 
-      Args:
-        - auth: (string) Either 'service' or 'user'.
-        - workflow: (Recipe JSON) The JSON of a workflow.
+    Args:
+      auth: Either 'service' or 'user'.
+      workflow: The JSON of a workflow.
+      https://github.com/google-marketing-solutions/bqflow/wiki/DV360-API-Example#workflow
 
-      Returns:
-        Modified workflow with "auth" fields recursively updated.
+    Returns:
+      None, modifies workflow in place with "auth" fields recursively updated.
     """
 
     if isinstance(workflow, dict):
       if 'auth' in workflow:
         workflow['auth'] = auth
-      for key, value in workflow.items():
+      for value in workflow.values():
         _auth_workflow(auth, value)
     elif isinstance(workflow, (list, tuple)):
       for value in workflow:
@@ -105,35 +113,52 @@ def auth_workflow(config:Configuration, workflow:Any) -> None:
     _auth_workflow('user', workflow)
 
 
-def is_scheduled(config:Configuration, task:Dict = dict()) -> bool:
-  """Wrapper for day_hour_scheduled that returns True if current time zone safe hour is in workflow schedule.
+def is_scheduled(config: Configuration, task: dict[str, Any]) -> bool:
+  """Check if workflow and task are scheduled to execute.
 
-     Used as a helper for any cron job running projects.  Keeping this logic in
-     project
-     helps avoid time zone detection issues and scheduling discrepencies between
-     machines.
+   Used as a helper for any cron job running projects.  Keeping this logic in
+   project helps avoid time zone detection issues and scheduling discrepancies
+   between machines.
 
-    Args:
-      * workflow: (Recipe JSON) The JSON of a workflow.
-      * task: ( dictionary / JSON ) The specific task being considered for execution.
+  Args:
+    config: The global parameters.
+    task: The specific task being considered for execution from the workflow.
+          https://github.com/google-marketing-solutions/bqflow/wiki/DV360-API-Example#workflow
 
-    Returns:
-      - True if task is scheduled to run current hour, else False.
+  Returns:
+    True if task is scheduled to run current hour, else False.
   """
 
-  if config.days == [] or config.date.strftime('%a') in config.days:
-    if config.hours == [] or config.hour in config.hours:
-      return True
+  if config.days and config.date.strftime('%a') not in config.days:
+    return False
+  elif config.hours and config.hour not in config.hours:
+    return False
+  elif task.get('days') and config.date.strftime('%a') not in task['days']:
+    return False
+  elif task.get('hours') and config.hour not in task['hours']:
+    return False
+  else:
+    return True
 
-  return False
 
-
-def execute(config:Configuration, workflow:Any, force:bool = False, instance:int = None) -> None:
+def execute(
+    config: Configuration,
+    workflow: dict[str, Any],
+    force: bool = False,
+    instance: int = None,
+) -> None:
   """Run all the tasks in a project in one sequence.
 
   Imports and calls each task handler specified in the recpie.
   Passes the Configuration and task JSON to each handler.
   For a full list of tasks see: scripts/*.json
+
+  Args:
+    config: Credentials wrapper.
+    workflow: JSON definition of each handler and its parameters.
+              https://github.com/google-marketing-solutions/bqflow/wiki/DV360-API-Example#workflow
+    force: Ignore any schedule settings if true, false by default.
+    instance: Sequential index of task to execute (one based index).
 
   Example:
   ```
@@ -163,18 +188,6 @@ def execute(config:Configuration, workflow:Any, force:bool = False, instance:int
         force = True
       )
   ```
-
-  Args:
-    * config: (class) Credentials wrapper.
-    * workflow: (dict) JSON definition of each handler and its parameters.
-    * force: (bool) Ignore any schedule settings if true, false by default.
-    * instance (int) Sequential index of task to execute (one based index).
-
-  Returns:
-    None
-
-  Raises:
-    All possible exceptions that may occur in a workflow.
   """
 
   auth_workflow(config, workflow)
@@ -185,22 +198,39 @@ def execute(config:Configuration, workflow:Any, force:bool = False, instance:int
     script, task = next(iter(task.items()))
 
     if instance and instance != sequence:
-      print('SKIPPING TASK #%d: %s - %s' % (sequence, script, task.get('description', '')))
+      print(
+          f'SKIPPING TASK #{sequence}: {script} - {task.get("description", "")}'
+      )
       continue
     else:
-      print('RUNNING TASK #%d: %s - %s' % (sequence, script, task.get('description', '')))
+      print(
+          f'RUNNING TASK #{sequence}: {script} - {task.get("description", "")}'
+      )
 
     if force or is_scheduled(config, task):
       python_callable = getattr(
-        importlib.import_module('bqflow.task.%s' % script),
-        script
+          importlib.import_module(f'bqflow.task.{script}'), script
       )
       task['sequence'] = sequence
       try:
         python_callable(config, log, task)
-        log.write('OK', 'TASK #{} COMPLETE: {} - {}'.format(sequence, script, task.get('description', '')))
+        log.write(
+            'OK',
+            'TASK #{} COMPLETE: {} - {}'.format(
+                sequence, script, task.get('description', '')
+            ),
+        )
       except Exception as e:
-        log.write('ERROR', 'TASK #{} FAILED: {} - {} WITH ERROR: {} {}'.format(sequence, script, task.get('description', ''), e.__class__.__name__, str(e)))
+        log.write(
+            'ERROR',
+            'TASK #{} FAILED: {} - {} WITH ERROR: {} {}'.format(
+                sequence,
+                script,
+                task.get('description', ''),
+                e.__class__.__name__,
+                str(e),
+            ),
+        )
         raise
 
     else:
