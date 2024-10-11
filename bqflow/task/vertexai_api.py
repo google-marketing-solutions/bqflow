@@ -44,9 +44,12 @@ Calling image generation:
         "query": "
           SELECT *
           FROM UNNEST([
-            STRUCT('puppy' AS uri, STRUCT(1 AS number_of_images, 1 AS seed, 'Picture of a cute puppy.' AS prompt) AS parameters),
-            STRUCT('kitten' AS uri, STRUCT(1 AS number_of_images, 1 AS seed, 'Picture of a cute kitten.' AS prompt) AS parameters),
-            STRUCT('duckling' AS uri, STRUCT(1 AS number_of_images, 1 AS seed, 'Picture of a cute duckling.' AS prompt) AS parameters)
+            STRUCT('puppy' AS uri, STRUCT(1 AS number_of_images, 1 AS seed,
+            'Picture of a cute puppy.' AS prompt) AS parameters),
+            STRUCT('kitten' AS uri, STRUCT(1 AS number_of_images, 1 AS seed,
+            'Picture of a cute kitten.' AS prompt) AS parameters),
+            STRUCT('duckling' AS uri, STRUCT(1 AS number_of_images, 1 AS seed,
+            'Picture of a cute duckling.' AS prompt) AS parameters)
           ])
         "
       }
@@ -79,9 +82,12 @@ Calling text generation:
         "query": "
           SELECT *
           FROM UNNEST([
-            STRUCT('puppy' AS uri, STRUCT(1024 AS max_output_tokens, 0.8 AS top_p, 'Picture of a cute puppy.' AS prompt) AS parameters),
-            STRUCT('kitten' AS uri, STRUCT(1024 AS max_output_tokens, 0.8 AS top_p, 'Picture of a cute kitten.' AS prompt) AS parameters),
-            STRUCT('duckling' AS uri, STRUCT(1024 AS max_output_tokens, 0.8 AS top_p, 'Picture of a cute duckling.' AS prompt) AS parameters)
+            STRUCT('puppy' AS uri, STRUCT(1024 AS max_output_tokens, 0.8 AS
+            top_p, 'Picture of a cute puppy.' AS prompt) AS parameters),
+            STRUCT('kitten' AS uri, STRUCT(1024 AS max_output_tokens, 0.8 AS
+            top_p, 'Picture of a cute kitten.' AS prompt) AS parameters),
+            STRUCT('duckling' AS uri, STRUCT(1024 AS max_output_tokens, 0.8 AS
+            top_p, 'Picture of a cute duckling.' AS prompt) AS parameters)
           ])
         "
       }
@@ -89,14 +95,23 @@ Calling text generation:
   }}
 """
 
-from collections.abc import Mapping, Sequence, Iterator
 import importlib
+import io
+
+from collections.abc import Iterator, Mapping
+from vertexai.preview.vision_models import Image
 
 try:
   import vertexai
 except ModuleNotFoundError as e:
-  raise ModuleNotFoundError('PLEASE RUN: python3 -m pip install google-cloud-aiplatform') from e
+  raise ModuleNotFoundError(
+      'PLEASE RUN: python3 -m pip install google-cloud-aiplatform'
+  ) from e
 
+try:
+  from PIL import Image as PIL_Image
+except ImportError:
+  PIL_Image = None
 
 from bqflow.util.auth import get_credentials
 from bqflow.util.configuration import Configuration
@@ -105,10 +120,22 @@ from bqflow.util.drive import Drive
 from bqflow.util.log import Log
 
 
+def resize_image(path: str, size: (int, int)) -> bytes:
+  """A basic image resizer."""
+  if PIL_Image is None:
+    raise ModuleNotFoundError(
+        'TO RESIZE IMAGES PLEASE RUN: python3 -m pip install pillow'
+    )
+  with PIL_Image.open(path) as img:
+    img_bytes = io.BytesIO()
+    img.resize(size)
+    img.save(img_bytes, img.format)
+    img_bytes.seek(0)
+    return img_bytes.getvalue()
+
+
 def vertexai_api(
-  config: Configuration,
-  log: Log,
-  task: Mapping
+    config: Configuration, log: Log, task: Mapping
 ) -> Iterator[Mapping]:
   """A wrapper for the Vertex API client allowing calls from workflows.
 
@@ -116,7 +143,7 @@ def vertexai_api(
 
   Args:
     config: an object conatining the credentials and project settings
-    log: an object that can be logged to.
+    log: required as part of the factory interface but not used here.
     task: the parameters passed from the workflow (see top level doc).
 
   Returns:
@@ -125,9 +152,9 @@ def vertexai_api(
 
   # authenticate
   vertexai.init(
-    project = config.project,
-    location = task['location'],
-    credentials = get_credentials(config, task['auth'])
+      project=config.project,
+      location=task['location'],
+      credentials=get_credentials(config, task['auth']),
   )
 
   # get model
@@ -147,46 +174,76 @@ def vertexai_api(
 
   # get parameters
   if 'kwargs' in task:
-    kwargs_list = task['kwargs'] if isinstance(
-      task['kwargs'],
-      (list, tuple)
-    ) else [task['kwargs']]
+    kwargs_list = (
+        task['kwargs']
+        if isinstance(task['kwargs'], (list, tuple))
+        else [task['kwargs']]
+    )
   elif 'kwargs_remote' in task:
     kwargs_list = get_rows(
-      config,
-      task['auth'],
-      task['kwargs_remote'],
-      as_object = True
+        config, task['auth'], task['kwargs_remote'], as_object=True
     )
 
   # write results
   def vertex_api_combine():
     for kwargs in kwargs_list:
       if config.verbose:
-        print('.', end = '', flush = True)
-      yield kwargs['uri'], model_function(**kwargs['parameters'])
+        print(kwargs['uri'])
+
+      if 'base_image' in kwargs['parameters']:
+        if 'resize' in task['model']:
+          kwargs['parameters']['base_image'] = Image(
+              resize_image(
+                  kwargs['parameters']['base_image'], task['model']['resize']
+              )
+          )
+        else:
+          kwargs['parameters']['base_image'] = Image.load_from_file(
+              location=kwargs['parameters']['base_image']
+          )
+      if 'mask' in kwargs['parameters']:
+        if 'resize' in task['model']:
+          kwargs['parameters']['mask'] = Image(
+              resize_image(
+                  kwargs['parameters']['mask'], task['model']['resize']
+              )
+          )
+        else:
+          kwargs['parameters']['mask'] = Image.load_from_file(
+              location=kwargs['parameters']['mask']
+          )
+
+      yield kwargs['uri'], model_function(**kwargs['parameters']), kwargs[
+          'parameters'
+      ].get('output_mime_type', 'txt').replace('image/', '').replace(
+          'jpeg', 'jpg'
+      )
 
   if 'bigquery' in task['destination']:
     return put_rows(
-      config = config,
-      auth = task['auth'],
-      destination = task['destination'],
-      rows = [
-        [response[0], response[1].text.strip()]
-        for response in vertex_api_combine()
-      ]
+        config=config,
+        auth=task['auth'],
+        destination=task['destination'],
+        rows=[
+            [response[0], response[1].text.strip()]
+            for response in vertex_api_combine()
+        ],
     )
   elif 'drive' in task['destination']:
-    for uri, images in vertex_api_combine():
+    for uri, images, extension in vertex_api_combine():
       for index, image in enumerate(images):
         Drive(config, task['auth']).file_create(
-          name = f'{uri}-{index}.png',
-          data = image._image_bytes,
-          parent = task['destination']['drive'],
-          overwrite = True
+            name=f'{uri}-{index}.{extension}',
+            data=image._image_bytes,
+            parent=task['destination']['drive'],
+            overwrite=True
         )
+  elif 'local' in task['destination']:
+    for uri, images, extension in vertex_api_combine():
+      for index, image in enumerate(images):
+        image.save(f'{task["destination"]["local"]}/{uri}-{index}.{extension}')
   else:
     raise NotImplementedError(
-      'The destination parameter must include "bigquery" or "drive".'
-      'See bqflow/task/vertex_api.py for examples.'
+        'The destination parameter must include "bigquery", "drive" or "local".'
+        'See bqflow/task/vertex_api.py for examples.'
     )

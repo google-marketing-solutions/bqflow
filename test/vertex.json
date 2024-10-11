@@ -16,7 +16,7 @@
         "type":"pretrained"
       },
       "destination":{
-        "drive":"1sknq05IWjBd_c0otU1NiXKaFxSctEEeo"
+        "local":"/tmp"
       },
       "kwargs_remote": {
         "bigquery":{
@@ -24,9 +24,9 @@
           "query": "
             SELECT *
             FROM UNNEST([
-              STRUCT('puppy' AS uri, STRUCT(1 AS number_of_images, 1 AS seed, 'Picture of a cute puppy.' AS prompt) AS parameters),
-              STRUCT('puppy' AS uri, STRUCT(1 AS number_of_images, 1 AS seed, 'Picture of a cute kitten.' AS prompt) AS parameters),
-              STRUCT('puppy' AS uri, STRUCT(1 AS number_of_images, 1 AS seed, 'Picture of a cute duckling.' AS prompt) AS parameters)
+              STRUCT('puppy' AS uri, STRUCT(1 AS number_of_images, 1 AS seed, 'Picture of a cute puppy.' AS prompt, 'image/jpeg' AS output_mime_type) AS parameters),
+              STRUCT('kitten' AS uri, STRUCT(1 AS number_of_images, 1 AS seed, 'Picture of a cute kitten.' AS prompt, 'image/jpeg' AS output_mime_type) AS parameters),
+              STRUCT('duckling' AS uri, STRUCT(1 AS number_of_images, 1 AS seed, 'Picture of a cute duckling.' AS prompt, 'image/jpeg' AS output_mime_type) AS parameters)
             ])
           "
         }
@@ -37,9 +37,9 @@
       "auth": "user",
       "location": "us-central1",
       "model": {
-        "class": "vertexai.preview.language_models.TextGenerationModel",
-        "name": "text-bison-32k@002",
-        "function":"predict",
+        "class":"vertexai.preview.generative_models.GenerativeModel",
+        "name": "gemini-1.5-flash",
+        "function":"generate_content",
         "type": "pretrained"
       },
       "destination": {
@@ -58,9 +58,9 @@
           "query": "
             SELECT *
             FROM UNNEST([
-              STRUCT('puppy' AS uri, STRUCT(1024 AS max_output_tokens, 0.8 AS top_p, 'Describe a cute puppy using a sentence.' AS prompt) AS parameters),
-              STRUCT('kitten' AS uri, STRUCT(1024 AS max_output_tokens, 0.8 AS top_p, 'Describe a cute kitten using a sentence.' AS prompt) AS parameters),
-              STRUCT('duckling' AS uri, STRUCT(1024 AS max_output_tokens, 0.8 AS top_p, 'Describe a cute duckling using a sentence.' AS prompt) AS parameters)
+              STRUCT('puppy' AS uri, STRUCT('Describe a cute puppy using a sentence.' AS contents) AS parameters),
+              STRUCT('kitten' AS uri, STRUCT('Describe a cute kitten using a sentence.' AS contents) AS parameters),
+              STRUCT('duckling' AS uri, STRUCT('Describe a cute duckling using a sentence.' AS contents) AS parameters)
             ])
           "
         }
