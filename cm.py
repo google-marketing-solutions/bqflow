@@ -18,7 +18,7 @@
 #
 ###########################################################################
 
-import json
+import yaml
 import argparse
 import textwrap
 
@@ -29,7 +29,7 @@ from bqflow.util.google_api import API_DCM
 
 
 def task_template(auth, report):
-  """Helper to create a BQFlow compatible task JSON from CM report."""
+  """Helper to create a BQFlow compatible task yaml from CM report."""
 
   task = {
     "cm_report":{
@@ -88,8 +88,8 @@ def main():
   parser.add_argument('--service', '-s', help='Path to SERVICE credentials json file.', default=None)
 
   parser.add_argument('--account', help='Account ID to use to pull the report.', required=True)
-  parser.add_argument('--report', help='Report ID to pull JSON definition.', default=None)
-  parser.add_argument('--schema', help='Report ID to pull achema definition.', default=None)
+  parser.add_argument('--report', help='Report ID to pull json definition.', default=None)
+  parser.add_argument('--schema', help='Report ID to pull schema definition.', default=None)
   parser.add_argument('--sample', help='Report ID to pull sample data.', default=None)
   parser.add_argument('--files', help='Report ID to pull file list.', default=None)
   parser.add_argument('--list', help='List reports.', action='store_true')
@@ -107,23 +107,23 @@ def main():
   profile = get_profile_for_api(config, auth, args.account)
   kwargs = { 'profileId': profile } 
 
-  # get report json
+  # get report yaml
   if args.report:
     kwargs['reportId'] = args.report
     report = API_DCM(config, auth).reports().get(**kwargs).execute()
-    print(json.dumps(report, indent=2, sort_keys=True))
+    print(yaml.dump(report, indent=2, sort_keys=True))
 
-  # get task json
+  # get task yaml
   elif args.task:
     kwargs['reportId'] = args.task
     report = API_DCM(config, auth).reports().get(**kwargs).execute()
-    print(json.dumps(task_template(auth, report), indent=2, sort_keys=True))
+    print(yaml.dump(task_template(auth, report), indent=2, sort_keys=True))
 
   # get report files
   elif args.files:
     kwargs['reportId'] = args.files
     for rf in API_DCM(config,  auth, iterate=True).reports().files().list(**kwargs).execute():
-      print(json.dumps(rf, indent=2, sort_keys=True))
+      print(yaml.dump(rf, indent=2, sort_keys=True))
 
   # get schema
   elif args.schema:
@@ -131,7 +131,7 @@ def main():
                                    args.schema, None, 10)
     rows = report_to_rows(report)
     rows = report_clean(rows)
-    print(json.dumps(report_schema(next(rows)), indent=2, sort_keys=True))
+    print(yaml.dump(report_schema(next(rows)), indent=2, sort_keys=True))
 
   # get sample
   elif args.sample:
@@ -145,7 +145,7 @@ def main():
   # get list
   else:
     for report in API_DCM( config, auth, iterate=True).reports().list(**kwargs).execute():
-      print(json.dumps(report, indent=2, sort_keys=True))
+      print(yaml.dump(report, indent=2, sort_keys=True))
 
 
 if __name__ == '__main__':
