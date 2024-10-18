@@ -23,7 +23,7 @@ import subprocess
 import sys
 import textwrap
 import os
-import json
+import yaml
 import concurrent.futures
 from threading import current_thread
 from typing import List
@@ -88,7 +88,7 @@ class Deployment:
     '''Executes workflows in the workflow directory, one per thread
 
     Args:
-    - workflow_directory: (string) The directory with the workflow JSON files to execute
+    - workflow_directory: (string) The directory with the workflow json/yaml files to execute
     '''
     thread = current_thread()
     print(f'Executing directory {workflow_directory} on thread {thread.name}...', flush=True)
@@ -107,7 +107,7 @@ class Deployment:
       else:
         project = self.get_project_from_vm()
         auth = '-s DEFAULT'
-      # Iterate over workflow JSON files only
+      # Iterate over workflow json/yaml files only
       for filename in files:
         if filename != 'service.json' and filename != 'user.json':
           workflow = os.path.join(path, filename)
@@ -123,9 +123,9 @@ class Deployment:
       executor.map(self.execute_workflow, self.get_parent_workflow_directories())
 
   def get_project_from_service(self, service_path) -> str:
-    '''Gets the project id from the service JSON file.'''
+    '''Gets the project id from the service json file.'''
     with open(service_path) as service_file:
-      return json.load(service_file)['project_id']
+      return yaml.load(service_file)['project_id']
 
   def get_project_from_vm(self) -> str:
     '''Gets the default/vm project id using gcloud commands.'''
@@ -150,13 +150,13 @@ if __name__ == "__main__":
   workflows = dir, passed as parameter to this script
     - workflow_1 = dir, ran as a single sequence
     - service.json = file, optional service definition to run as, if not given uses VM default
-    - workflow_a.json = file, the sequence of BQFlow steps to run
-    - workflow_b.json = file, the sequence of BQFlow steps to run
+    - workflow_a.yaml = file, the sequence of BQFlow steps to run
+    - workflow_b.yaml = file, the sequence of BQFlow steps to run
     - ...
     - workflow_2 = dir, ran as a single sequence
     - service.json = file, optional service definition to run as, if not given uses VM default
-    - workflow_a.json = file, the sequence of BQFlow steps to run
-    - workflow_b.json = file, the sequence of BQFlow steps to run
+    - workflow_a.yaml = file, the sequence of BQFlow steps to run
+    - workflow_b.yaml = file, the sequence of BQFlow steps to run
     - ...
 
   If a service.json is NOT provided, the code will attempt to use the DEFAULT VM service credentials.

@@ -18,34 +18,40 @@
 #
 ###########################################################################
 
-import json
+import yaml
 import importlib
 
 from typing import Dict, Any
 
 from bqflow.util.configuration import Configuration
 from bqflow.util.log import Log
+from jinja2 import Environment, FileSystemLoader, select_autoescape
+
+env = Environment(
+  loader=FileSystemLoader('.'),
+    autoescape=select_autoescape()
+)
 
 
 def get_workflow(filepath:str=None, filecontent:str=None) -> Any:
-  """Loads json for workflow, replaces newlines, and expands includes.
+  """Loads yaml for workflow, replaces newlines, and expands includes.
 
     Args:
-     - filepath: (string) The local file path to the workflow json file to load.
+     - filepath: (string) The local file path to the workflow json/yaml file to load.
      - filecontent: (string) The content of thw workflow to sanitize.
 
     Returns:
       Dictionary of workflow file.
 
     Raises:
-      ValueError when there is a JSON parsing issue.
+      ValueError when there is a yaml parsing issue.
   """
 
   try:
     if filecontent is None:
       with open(filepath) as workflow_file:
-        filecontent = workflow_file.read()
-    return json.loads(filecontent.replace('\n', ' '))
+        template = env.from_string(workflow_file.read())
+    return yaml.safe_load(template.render())
   except ValueError as e:
     pos = 0
     for count, line in enumerate(filecontent.splitlines(), 1):
@@ -53,7 +59,7 @@ def get_workflow(filepath:str=None, filecontent:str=None) -> Any:
         pos += len(line) + 1
       else:
         e.lineno = count
-        e.args = ('JSON ERROR: %s LINE: %s CHARACTER: %s ERROR: %s LINE: %s' %
+        e.args = ('yaml ERROR: %s LINE: %s CHARACTER: %s ERROR: %s LINE: %s' %
           (filepath, count, e.pos - pos - 1, str(e.msg), line.strip())
         )
         raise
@@ -72,7 +78,7 @@ def auth_workflow(config:Configuration, workflow:Any) -> None:
 
     Args:
       - config: (class) Credentials wrapper.
-      - workflow: (Recipe JSON) The JSON of a workflow.
+      - workflow: (Recipe JSON/YAML) The yaml of a workflow.
 
     Returns:
       Modified workflow with "auth" fields recursively updated.
@@ -83,7 +89,7 @@ def auth_workflow(config:Configuration, workflow:Any) -> None:
 
       Args:
         - auth: (string) Either 'service' or 'user'.
-        - workflow: (Recipe JSON) The JSON of a workflow.
+        - workflow: (Recipe JSON/YAML) The yaml of a workflow.
 
       Returns:
         Modified workflow with "auth" fields recursively updated.
@@ -114,8 +120,8 @@ def is_scheduled(config:Configuration, task:Dict = dict()) -> bool:
      machines.
 
     Args:
-      * workflow: (Recipe JSON) The JSON of a workflow.
-      * task: ( dictionary / JSON ) The specific task being considered for execution.
+      * workflow: (Recipe JSON/YAML) The yaml of a workflow.
+      * task: ( dictionary / yaml ) The specific task being considered for execution.
 
     Returns:
       - True if task is scheduled to run current hour, else False.
@@ -132,8 +138,8 @@ def execute(config:Configuration, workflow:Any, force:bool = False, instance:int
   """Run all the tasks in a project in one sequence.
 
   Imports and calls each task handler specified in the recpie.
-  Passes the Configuration and task JSON to each handler.
-  For a full list of tasks see: scripts/*.json
+  Passes the Configuration and task yaml to each handler.
+  For a full list of tasks see: scripts/*.yaml
 
   Example:
   ```
@@ -166,12 +172,12 @@ def execute(config:Configuration, workflow:Any, force:bool = False, instance:int
 
   Args:
     * config: (class) Credentials wrapper.
-    * workflow: (dict) JSON definition of each handler and its parameters.
+    * workflow: (dict) yaml definition of each handler and its parameters.
     * force: (bool) Ignore any schedule settings if true, false by default.
     * instance (int) Sequential index of task to execute (one based index).
 
   Returns:
-    None
+    Log the log instance for testing
 
   Raises:
     All possible exceptions that may occur in a workflow.
@@ -192,7 +198,7 @@ def execute(config:Configuration, workflow:Any, force:bool = False, instance:int
 
     if force or is_scheduled(config, task):
       python_callable = getattr(
-        importlib.import_module('bqflow.task.%s' % script),
+        importlib.import_module(script),
         script
       )
       task['sequence'] = sequence
@@ -205,3 +211,5 @@ def execute(config:Configuration, workflow:Any, force:bool = False, instance:int
 
     else:
       print('Schedule Skipping: add --force to ignore schedule')
+
+  return log

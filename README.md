@@ -40,9 +40,9 @@ python3 -m pip install -r requirements.txt
 
 ## Run A Workflow
 
-A workflow is a JSON file that contains API endpoints and parameters. See the
+A workflow is a JSON or YAML file that contains API endpoints and parameters. See the
 [Wiki](../../wiki) for details examples and details on workflows. You may also
-receive workflow JSON files from Google when collaborating on a project. The
+receive workflow YAML and/or JSON files from Google when collaborating on a project. The
 following command will show you how to run a workflow:
 
 ```
@@ -137,7 +137,7 @@ To execute the workflows on a schedule from [Google Drive](https://www.google.co
   1. Set up the [schedule tab](https://console.cloud.google.com/compute/instances/instanceSchedules?&tab=instanceSchedules).
   1. Start adding workflows to your drive folder and sharing with the service email address from step one.
      * For security reasons workflows have to be in [DRIVE FOLDER LINK].
-     * Edit JSON files from your machine using [Google Drive For Desktop](https://www.google.com/drive/download/).
+     * Edit JSON/YAML files from your machine using [Google Drive For Desktop](https://www.google.com/drive/download/).
 
 
 ## Authentication Credentials

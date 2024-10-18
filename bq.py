@@ -18,7 +18,7 @@
 #
 ###########################################################################
 
-import json
+import yaml
 import textwrap
 import argparse
 
@@ -129,10 +129,10 @@ def main():
 
   auth = 'service' if args.service else 'user'
 
-  schema = json.loads(args.schema) if args.schema else None
+  schema = yaml.safe_load(args.schema) if args.schema else None
 
   if args.task:
-    print(json.dumps(task_template(
+    print(yaml.dump(task_template(
      auth,
      API_BigQuery(config, auth).tables().get(projectId=config.project, datasetId=args.dataset, tableId=args.task).execute()
     ), indent=2).replace('\\n', '\n'))
@@ -144,7 +144,7 @@ def main():
 
       if not schema:
         rows, schema = get_schema(rows)
-        print('DETECETED SCHEMA', json.dumps(schema))
+        print('DETECETED SCHEMA', yaml.dump(schema))
         print('Please run again with the above schema provided.')
         exit()
 
@@ -169,7 +169,7 @@ def main():
       print()
 
     else:
-      print(json.dumps(schema, indent=2))
+      print(yaml.dump(schema, indent=2))
 
 if __name__ == '__main__':
   main()

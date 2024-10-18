@@ -1,0 +1,9 @@
+tasks:
+- hello_world:
+    description: Wish the world hello
+    kwargs:
+      - greeting: 'hola'
+      - greeting: 'ni hao'
+      - greeting: 'namaste'
+      - greeting: "greetings!
+          I mean... hello"

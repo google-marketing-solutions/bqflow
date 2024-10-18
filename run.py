@@ -20,6 +20,7 @@
 
 import argparse
 import textwrap
+import sys
 
 from bqflow.util.configuration import Configuration
 from bqflow.util.drive import Drive
@@ -36,8 +37,8 @@ def main():
     description=textwrap.dedent("""\
       Command line to execute all tasks in a workflow once.
 
-      This script dispatches all the tasks in a JSON workflow to handlers in sequence.
-      For each task, it calls a subprocess to execute the JSON instructions, waits
+      This script dispatches all the tasks in a YAML/JSON workflow to handlers in sequence.
+      For each task, it calls a subprocess to execute the YAML/JSON instructions, waits
       for the process to complete and dispatches the next task, until all tasks are
       complete or a critical failure ( exception ) is raised.
 
@@ -47,7 +48,7 @@ def main():
       Caution: This script does NOT check if the last job finished, potentially causing overruns.
   """))
 
-  parser.add_argument('workflow', help='Path, local or Google Drive link, to workflow json file to run.')
+  parser.add_argument('workflow', help='Path, local or Google Drive link, to workflow YAML/JSON file to run.')
   parser.add_argument('--project', '-p', help='Cloud ID of Google Cloud Project.', default=None)
   parser.add_argument('--key', '-k', help='API Key of Google Cloud Project.', default=None)
   parser.add_argument('--service', '-s', help='Path to SERVICE credentials json file.', default=None)
@@ -57,8 +58,14 @@ def main():
   parser.add_argument('--task', '-t', help='Task number of the task to run starting at 1.', default=None, type=int)
   parser.add_argument('--verbose', '-v', help='Print all the steps as they happen.', action='store_true')
   parser.add_argument('--force', '-force', help='Not used but included for compatiblity with another script.', action='store_true')
-
+  parser.add_argument('--include', '-i', help='Specify a tasks folder to include for custom bqflow tasks. Will override standard tasks with the same name.')
+  parser.add_argument('--no-default-task-path', help='Include the default task path, bqflow/task', action='store_true')
   args = parser.parse_args()
+
+  if not args.no_default_task_path:
+    sys.path.append('bqflow/task')
+  if args.include:
+    sys.path.append(args.include)
 
   config = Configuration(
     project=args.project,
@@ -67,7 +74,7 @@ def main():
     user=args.user,
     key=args.key,
     timezone=args.timezone,
-    verbose=args.verbose
+    verbose=args.verbose,
   )
 
   if args.workflow.startswith(GOOGLE_DRIVE_PREFIX):
