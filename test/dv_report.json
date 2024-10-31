@@ -1,0 +1,106 @@
+{
+  "tasks": [
+    { "dataset": {
+      "description": "Create Test dataset.",
+      "auth": "user",
+      "dataset": "Test"
+    }},
+    { "bigquery": {
+      "description": "Create DV360 report cohorts, ADD TEST ADVERTISERS HERE.",
+      "auth": "user",
+      "from": {
+        "query": "
+          SELECT
+             STRUCT(
+               STRUCT(
+                 'LAST_7_DAYS' AS `range`
+               ) AS `dataRange`,
+               'CSV' AS `format`,
+               false AS `sendNotification`,
+               FORMAT('BQFlow Report Test - %d', cohort) AS `title`
+             ) AS `metadata`,
+             STRUCT (
+                 ARRAY(
+                  SELECT AS STRUCT
+                    'FILTER_PARTNER' AS `type`,
+                    advertiserId AS `value`
+                  FROM UNNEST(advertiserIds) AS advertiserId
+                ) AS `filters`,
+               ['FILTER_ADVERTISER'] AS `groupBys`,
+               ['METRIC_IMPRESSIONS'] AS `metrics`,
+               'STANDARD' AS `type`
+             ) AS `params`,
+             STRUCT(
+               'ONE_TIME' AS `frequency`
+             ) AS `schedule`
+           FROM (
+             SELECT
+               cohort,
+               ARRAY_AGG(advertiserId) AS advertiserIds,
+             FROM (
+               SELECT
+                 advertiserId,
+                 MOD(ROW_NUMBER() OVER(ORDER BY advertiserId ASC), 3) + 1
+                 AS cohort
+               FROM UNNEST(
+                 ['234340', '234340', '6778100135', '6764191627', '673070109']
+               ) AS advertiserId
+             )
+             GROUP BY cohort
+           )
+           ORDER BY cohort
+        "
+      },
+      "to": {
+        "dataset": "Test",
+        "view": "DV360_Cohorts",
+        "replace": true
+      }
+    }},
+    { "dv_reports": {
+      "description": "Create DV360 reports.",
+      "auth": "user",
+      "delete": true,
+      "create": true,
+      "reports": {
+        "bigquery": {
+          "query": "SELECT * FROM `DV360_Cohorts`",
+          "dataset": "Test"
+        }
+      }
+    }},
+    { "dv_reports": {
+      "description": "Download DV360 reports.",
+      "auth": "user",
+      "reports": {
+        "bigquery": {
+          "query": "SELECT * FROM `DV360_Cohorts`",
+          "dataset": "Test"
+        }
+      },
+      "results": {
+        "bigquery": {
+          "auth": "user",
+          "dataset": "Test",
+          "table": "DV360_Report",
+          "header": true,
+          "schema": [
+            { "name": "PartnerId", "type": "STRING" },
+            { "name": "Impressions", "type": "STRING" }
+          ]
+        }
+      }
+    }},
+    { "dv_reports": {
+      "description": "Delete DV360 reports.",
+      "auth": "user",
+      "delete": true,
+      "reports": {
+        "bigquery": {
+          "query": "SELECT * FROM `DV360_Cohorts`",
+          "dataset": "Test"
+        }
+      }
+    }}
+  ]
+}
