@@ -146,7 +146,7 @@ def execute(
     workflow: dict[str, Any],
     force: bool = False,
     instance: int = None,
-) -> None:
+) -> Log:
   """Run all the tasks in a project in one sequence.
 
   Imports and calls each task handler specified in the recpie.
@@ -159,6 +159,9 @@ def execute(
               https://github.com/google-marketing-solutions/bqflow/wiki/DV360-API-Example#workflow
     force: Ignore any schedule settings if true, false by default.
     instance: Sequential index of task to execute (one based index).
+
+  Returns:
+    A log of the workflow plus any logs added by each task.
 
   Example:
   ```
@@ -235,3 +238,5 @@ def execute(
 
     else:
       print('Schedule Skipping: add --force to ignore schedule')
+
+  return log
