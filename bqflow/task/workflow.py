@@ -235,3 +235,5 @@ def execute(
 
     else:
       print('Schedule Skipping: add --force to ignore schedule')
+
+  return log
