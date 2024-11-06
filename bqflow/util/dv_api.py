@@ -20,7 +20,7 @@ import re
 import time
 
 from collections.abc import Iterator
-from typing import Any, Dict, Union
+from typing import Any, List, Union
 from types import GeneratorType
 from urllib.request import urlopen
 
@@ -449,7 +449,10 @@ def report_to_rows(report: Iterator[list]) -> Iterator[list]:
       yield row
 
 
-def report_clean(rows: Iterator[list]) -> Iterator[list]:
+def report_clean(
+    rows: Iterator[List[List[Any]]],
+    header: bool = True
+) -> Iterator[List[List[Any]]]:
   """Helper to fix DBM report issues for BigQuery and ensure schema compliance.
 
   Memory efficiently cleans each row by fixing:
@@ -468,18 +471,16 @@ def report_clean(rows: Iterator[list]) -> Iterator[list]:
   ```
 
   Args:
-    * rows: (iterator) Rows to clean.
+    rows: Rows to clean.
+    header: Return header if true, else strip.
 
   Returns:
-    * Iterator of cleaned rows.
-
+    Iterator of cleaned rows.
   """
 
   print('DBM REPORT CLEAN')
 
   first = True
-  last = False
-  date = None
   for row in rows:
     # stop if no data returned
     if row == ['No data returned by the reporting service.']:
@@ -489,14 +490,18 @@ def report_clean(rows: Iterator[list]) -> Iterator[list]:
     if not row or row[0] is None or row[0] == '':
       break
 
-    # sanitizie header row
+    # sanitize header row
     if first:
-      try:
-        date_column = row.index('Date')
-        row[date_column] = 'Report_Day'
-      except ValueError:
-        pass
-      row = [column_header_sanitize(cell) for cell in row]
+      first = False
+      if header:
+        try:
+          date_column = row.index('Date')
+          row[date_column] = 'Report_Day'
+        except ValueError:
+          pass
+        row = [column_header_sanitize(cell) for cell in row]
+      else:
+        continue
 
     # for all data rows clean up cells
     else:
@@ -516,6 +521,3 @@ def report_clean(rows: Iterator[list]) -> Iterator[list]:
 
     # return the row
     yield row
-
-    # not first row anymore
-    first = False

@@ -151,7 +151,7 @@ def dv_reports_combine(
 
       # clean up the report
       rows = report_to_rows(filedata)
-      rows = report_clean(rows)
+      rows = report_clean(rows, header=False)
       yield from rows
 
 

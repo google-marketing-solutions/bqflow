@@ -13,7 +13,7 @@
           SELECT
              STRUCT(
                STRUCT(
-                 'LAST_7_DAYS' AS `range`
+                 'LAST_90_DAYS' AS `range`
                ) AS `dataRange`,
                'CSV' AS `format`,
                false AS `sendNotification`,
@@ -22,7 +22,7 @@
              STRUCT (
                  ARRAY(
                   SELECT AS STRUCT
-                    'FILTER_PARTNER' AS `type`,
+                    'FILTER_ADVERTISER' AS `type`,
                     advertiserId AS `value`
                   FROM UNNEST(advertiserIds) AS advertiserId
                 ) AS `filters`,
@@ -42,14 +42,17 @@
                  advertiserId,
                  MOD(ROW_NUMBER() OVER(ORDER BY advertiserId ASC), 3) + 1
                  AS cohort
-               FROM UNNEST(
-                 ['234340', '234340', '6778100135', '6764191627', '673070109']
-               ) AS advertiserId
+               FROM UNNEST({advertisers}) AS advertiserId
              )
              GROUP BY cohort
            )
            ORDER BY cohort
-        "
+        ",
+        "parameters": {
+          "advertisers": [
+            "1786240", "971166671", "6764191627", "6778100135", "673070109"
+          ]
+        }
       },
       "to": {
         "dataset": "Test",
@@ -83,9 +86,8 @@
           "auth": "user",
           "dataset": "Test",
           "table": "DV360_Report",
-          "header": true,
           "schema": [
-            { "name": "PartnerId", "type": "STRING" },
+            { "name": "AdvertiserId", "type": "STRING" },
             { "name": "Impressions", "type": "STRING" }
           ]
         }
