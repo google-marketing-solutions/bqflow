@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Google Ads Reference Data Helper</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <script src="criteria.js"></script>
+    <style>
+      body
+      {
+        font-family: 'Tahoma', Geneva, Verdana, sans-serif;
+        background-color: #fff;
+        text-align: center;
+      }
+
+      h2 {
+        font-size: 1.8em;
+        text-transform: uppercase;
+      }
+
+      table {
+        background-color: #f0f0f0;
+        border-radius: 10px;
+        border-spacing: 10px 0px;
+        margin: 10px auto 60px auto;
+        text-align: left;
+      }
+
+      th {
+        font-size: 1.2em;
+        font-weight: bold;
+        text-transform: capitalize;
+        padding: 5px;
+      }
+
+      tr:nth-child(even) {
+        background-color: #fafafa;
+      }
+
+      tr:hover {
+        background-color: #333;
+        color: #fff;
+      }
+
+      td {
+        padding: 3px;
+        cursor: copy;
+      }
+
+      #criteriaDiv {
+        display: block;
+        max-width: 960px;
+        margin: 40px auto;
+        text-align: center;
+      }
+
+      #criteriaDiv span {
+        display: inline-block;
+        box-sizing: border-box;
+        padding: 4px;
+        width: 24%;
+        min-width: 240px;
+        text-transform: capitalize;
+        text-align: left;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>DV360 SDF And Google Ads Criteria Helper</h1>
+    <input type="text" id="searchInput1" placeholder="Enter search term..."> + <input type="text" id="searchInput2" placeholder="Enter search term...">
+    <button onclick="searchData()">Search</button>
+    <div id="criteriaDiv">LOADING...</div>
+    <div id="resultsDiv"></div>
+    <p>This tool helps search Google Ads API Criteria and is provided as is without warranty, please contact <a href="mailto:kenjora%40google.com?subject=Google%20Ads%20Reference%20Data%20Helper&amp;body=Hi%20Paul%2C%20I%20have%20a%20question%20about...">kenjora&#64;google.com</a> for help.</p>
+    <p><strong>CAUTION:</strong> All criteria were pulled from <a href="https://developers.google.com/google-ads/api/data/codes-formats">Google Ads API Criteria</a> on 2024/11/13, newer criteria may exist.</a></p>
+
+    <script>
+
+      const columnsCount = 4;
+      const resultsDiv = document.getElementById("resultsDiv");
+      const checkboxesDiv = document.getElementById('criteriaDiv');
+      const criteria_keys = Object.keys(criteria)
+
+      for (const criteria_name of criteria_keys) {
+
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.id = criteria_name;
+        checkbox.name = "criteria_name";
+        checkbox.value = criteria_name;
+        checkbox.checked = true;
+
+        const label = document.createElement("label");
+        label.htmlFor = criteria_name;
+        label.textContent = criteria_name;
+
+        const checkboxesSpan = document.createElement("span");
+        checkboxesSpan.appendChild(checkbox);
+        checkboxesSpan.appendChild(label);
+
+        checkboxesDiv.appendChild(checkboxesSpan);
+        criteria[criteria_name]['checkbox'] = checkbox;
+      }
+
+      for (let i = 0; i < columnsCount - criteria_keys.length % columnsCount; i++) {
+        checkboxesDiv.appendChild(document.createElement("span"));
+      }
+
+      function copyTextToClipboard(element) {
+        if (element) {
+          const textToCopy = element.textContent;
+          navigator.clipboard.writeText(textToCopy)
+            .then(() => { console.log('Text copied to clipboard!'); })
+            .catch(err => { console.error('Failed to copy text: ', err); });
+        } else {
+          console.error('Element not found.');
+        }
+      }
+
+      function createTable(name, header, rows) {
+        const section = document.createElement('h2');
+        const table = document.createElement('table');
+        const tableHead = document.createElement('thead');
+        const tableBody = document.createElement('tbody');
+        const headerRow = tableHead.insertRow();
+
+        section.innerHTML = name;
+        resultsDiv.appendChild(section);
+
+        header.forEach(header_column => {
+          const headerCell = document.createElement("th")
+          headerCell.textContent = header_column;
+          headerRow.appendChild(headerCell);
+        });
+        table.appendChild(tableHead);
+
+        rows.forEach(row => {
+          const bodyRow = tableBody.insertRow();
+          row.forEach(value => {
+            const bodyCell = bodyRow.insertCell();
+            bodyCell.textContent = value;
+            bodyCell.addEventListener('click', (event) => { copyTextToClipboard(event.target); });
+
+          });
+        });
+
+        table.appendChild(tableBody);
+        resultsDiv.appendChild(table);
+      }
+
+      function filterRows(rows, searchTerm1, searchTerm2) {
+        return rows.filter(row => {
+          const match1 = searchTerm1 === "" || row.some(value => String(value).toLowerCase().includes(searchTerm1));
+          const match2 = searchTerm2 === "" || row.some(value => String(value).toLowerCase().includes(searchTerm2));
+          return match1 && match2;
+        });
+      }
+
+      function searchData() {
+        resultsDiv.innerHTML = "";
+
+        const searchTerm1 = document.getElementById("searchInput1").value.toLowerCase();
+        const searchTerm2 = document.getElementById("searchInput2").value.toLowerCase();
+        if (searchTerm1 === "" && searchTerm2 === "") { return; }
+
+        for (const criteria_name of criteria_keys) {
+          if (criteria[criteria_name]['checkbox'].checked) {
+            const results = filterRows(criteria[criteria_name]['rows'], searchTerm1, searchTerm2);
+            if (results.length !== 0) {
+              createTable(criteria_name, criteria[criteria_name]['headers'], results);
+            }
+          }
+        }
+      }
+    </script>
+  </body>
+</html>
