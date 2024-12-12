@@ -4,7 +4,6 @@
     <meta charset="utf-8">
     <title>Google Ads Reference Data Helper</title>
     <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
-    <script src="criteria.js"></script>
     <style>
       body
       {
@@ -74,12 +73,15 @@
     <p>This tool helps search Google Ads API Criteria and is provided as is without warranty, please contact <a href="mailto:kenjora%40google.com?subject=Google%20Ads%20Reference%20Data%20Helper&amp;body=Hi%20Paul%2C%20I%20have%20a%20question%20about...">kenjora&#64;google.com</a> for help.</p>
     <p><strong>CAUTION:</strong> All criteria were pulled from <a href="https://developers.google.com/google-ads/api/data/codes-formats">Google Ads API Criteria</a> on 2024/11/13, newer criteria may exist.</a></p>
 
+    <script src="criteria.js"></script>
     <script>
 
       const columnsCount = 4;
       const resultsDiv = document.getElementById("resultsDiv");
       const checkboxesDiv = document.getElementById('criteriaDiv');
       const criteria_keys = Object.keys(criteria)
+
+      checkboxesDiv.innerHTML = '';
 
       for (const criteria_name of criteria_keys) {
 
