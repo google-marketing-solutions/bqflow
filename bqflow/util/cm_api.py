@@ -29,7 +29,7 @@ from bqflow.util.storage_api import media_download
 from bqflow.util.csv import column_header_sanitize, csv_to_rows
 from bqflow.util.cm_schema import DCM_Field_Lookup
 
-DCM_CHUNKSIZE = misc.memory_scale(maximum=200 * 1024**3, multiple=256 * 1024)
+DCM_CHUNKSIZE = misc.memory_scale(maximum=200 * 1024**2, multiple=256 * 1024)
 DCM_CONVERSION_SIZE = 1000
 
 

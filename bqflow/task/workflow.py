@@ -200,7 +200,7 @@ def execute(
   for sequence, task in enumerate(workflow['tasks'], 1):
     script, task = next(iter(task.items()))
 
-    if instance and instance != sequence:
+    if instance is not None and instance != sequence:
       print(
           f'SKIPPING TASK #{sequence}: {script} - {task.get("description", "")}'
       )

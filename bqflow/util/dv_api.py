@@ -31,7 +31,7 @@ from bqflow.util.google_api import API_DBM
 from bqflow.util.misc import memory_scale
 
 
-DBM_CHUNKSIZE = memory_scale(maximum=200 * 1024**3, multiple=256 * 1024)
+DBM_CHUNKSIZE = memory_scale(maximum=200 * 1024**2, multiple=256 * 1024)
 RE_FILENAME = re.compile(r'.*/(.*)\?GoogleAccess')
 
 def report_get(

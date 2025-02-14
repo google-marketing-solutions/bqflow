@@ -203,7 +203,7 @@ def dv_reports(
       report_build(config, task['auth'], report)
 
   # check if report is to be run
-  if task.get('run', False):
+  elif task.get('run', False):
 
     if config.verbose:
       print('DBM RUN')

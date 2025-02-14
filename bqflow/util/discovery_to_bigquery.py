@@ -256,14 +256,17 @@ class Discovery_To_BigQuery():
 
       # scalar
       else:
-        bigquery_schema.append({
-          'description': (
-            ','.join(value.get('enum', []))
-          )[:DESCRIPTION_LENGTH],
-          'name': key,
-          'type': self.to_type(value),
-          'mode': 'NULLABLE'
-        })
+        if 'additionalProperties' in value:
+          print('SKIPPING AMBIGUOUS RECORD:', value)
+        else:
+          bigquery_schema.append({
+            'description': (
+              ','.join(value.get('enum', []))
+            )[:DESCRIPTION_LENGTH],
+            'name': key,
+            'type': self.to_type(value),
+            'mode': 'NULLABLE'
+          })
 
     return bigquery_schema
 
