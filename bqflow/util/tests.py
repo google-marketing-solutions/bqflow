@@ -16,24 +16,43 @@
 #
 ###########################################################################
 
+"""Test harness for BQFlow utils.
+
+To run this test harness the following ENV variables must be set:
+  - BQFLOW_PROJECT - Google Cloud Project name.
+  - BQFLOW_USER - Optional path to user credentials to run the test.
+  - BQFLOW_SERVICE - Optional path to service credentials to run the test.
+  - BQFLOW_KEY - Optional Google Cloud Project API key.
+  - BQFLOW_TIMEZONE - Optional, defaults to 'America/Los_Angeles'.
+  - BQFLOW_VERBOSE - Set to True or False, to toggle screen prints.
+
+Example:
+  export BQFLOW_PROJECT='gtech-kenjora'
+  export BQFLOW_USER='/Users/kenjora/user.json'
+  python -m unittest tests.TestCSV.test_find_utf8_split
+"""
+
 import unittest
 import io
+import os
 
-from csv import find_utf8_split, response_utf8_stream
+from bqflow.util.csv import response_utf8_stream
+from bqflow.util.configuration import Configuration
+from bqflow.util.vertexai_api import Image
+from bqflow.util.vertexai_api import ImageAI
+from bqflow.util.vertexai_api import TextAI
 
 
 class TestCSV(unittest.TestCase):
-  """Test the CSV module.  Currently only testing utf-8 function but WIP.
-  """
+  """Test the csv module.  Currently only testing utf-8 function but WIP."""
 
   def test_find_utf8_split(self):
-    """  Tests: find_utf8_split, response_utf8_stream
+    """Tests: response_utf8_stream so reports stream correctly.
 
-    Verify that encoding is an issue when not boundry aligned.
+    Verify that encoding is an issue when not boundary aligned.
     Run boundary detection against 3 different UTF-8 encodings of different byte lengths.
     Pick 17 (prime) as a chunk size to ensure utf-8 byte boundary is hit.
     Run against multiple chunks to ensure test goes in and out of utf-8 alignement.
-
     """
 
     string_ascii = bytes('"#$%&()*+,-./0123456789:;<=>?@ABCDEF', 'utf-8')
@@ -68,3 +87,85 @@ class TestCSV(unittest.TestCase):
     self.assertEqual(next(chunks), '路露魯鷺碌祿')
     self.assertEqual(next(chunks), '綠菉錄縷陋')
     self.assertEqual(next(chunks), '勒諒量')
+
+
+class TestAI(unittest.TestCase):
+  """Test the vertexai_api module."""
+
+  def setUp(self) -> None:
+    """Initialize any credentials and time units for the test, read from ENV."""
+
+    super().setUp()
+
+    self.assertIsNotNone(
+        os.environ.get('BQFLOW_PROJECT'),
+        msg='No env variable, run: export BQFLOW_PROJECT="GCP PROJECT"',
+    )
+
+    self.assertIsNotNone(
+        os.environ.get('BQFLOW_USER') or os.environ.get('BQFLOW_SERVICE'),
+        msg='No env variable, run: export BQFLOW_USER="CREDENTIALS PATH"',
+    )
+
+    self.config = Configuration(
+        project=os.environ.get('BQFLOW_PROJECT'),
+        service=os.environ.get('BQFLOW_SERVICE'),
+        user=os.environ.get('BQFLOW_USER'),
+        key=os.environ.get('BQFLOW_KEY'),
+        timezone=os.environ.get('BQFLOW_TIMEZONE', 'America/Los_Angeles'),
+        verbose=os.environ.get('BQFLOW_VERBOSE', 'false').lower() == 'true',
+    )
+
+    self.auth = 'service' if os.environ.get('BQFLOW_KEY') else 'user'
+
+  def test_text_ai(self):
+    """Test main path TextAI functionality."""
+
+    text_ai = TextAI(config=self.config, auth=self.auth)
+
+    self.assertEqual(
+        text_ai.safely_generate_text(
+            prompt='Please say just the word "hi".'
+        ),
+        'hi'
+    )
+
+    self.assertEqual(
+        text_ai.safely_generate_list(
+            prompt='Generate a python list with the integers 0 to 9 in sequential order.'
+        ),
+        [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    )
+
+    self.assertEqual(
+        text_ai.safely_generate_dict(
+            prompt='Generate a python dict with the word "cat" as key and "dog" as value.'
+        ),
+        {'cat': 'dog'}
+    )
+
+    self.assertEqual(
+        text_ai.safely_generate_html(
+            prompt='Wrap the sentence "The red fox." into an HTML paragraph tag.'
+        ),
+        '<p>The red fox.</p>'
+    )
+
+  def test_image_ai(self):
+    """Test main path ImageAI functionality."""
+
+    image_ai = ImageAI(config=self.config, auth=self.auth)
+
+    image = next(image_ai.safely_generate_image(
+        prompt='Generate a picture of a dog.'
+    ))
+    self.assertIsInstance(image, Image)
+
+    image = next(image_ai.safely_edit_image(
+        prompt='Add a cat next to the dog.',
+        base_image=image
+    ))
+    self.assertIsInstance(image, Image)
+
+if __name__ == '__main__':
+  unittest.main()
