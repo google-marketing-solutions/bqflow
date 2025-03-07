@@ -38,6 +38,7 @@ import os
 
 from bqflow.util.csv import response_utf8_stream
 from bqflow.util.configuration import Configuration
+from bqflow.util.discovery_to_bigquery import Discovery_To_BigQuery
 from bqflow.util.vertexai_api import Image
 from bqflow.util.vertexai_api import ImageAI
 from bqflow.util.vertexai_api import TextAI
@@ -169,3 +170,23 @@ class TestAI(unittest.TestCase):
 
 if __name__ == '__main__':
   unittest.main()
+
+
+class TestDiscovery(unittest.TestCase):
+  """Test the discovery_to_bigquery module."""
+
+  def test_discovery(self):
+    spec = Discovery_To_BigQuery('dfareporting', 'v4').method_schema('userProfiles.get', False)
+
+    self.assertEqual(
+        spec,
+        [ {'description': '', 'name': 'accountId', 'type': 'STRING', 'mode': 'NULLABLE'},
+          {'description': '', 'name': 'accountName', 'type': 'STRING', 'mode': 'NULLABLE'},
+          {'description': '', 'name': 'etag', 'type': 'STRING', 'mode': 'NULLABLE'},
+          {'description': '', 'name': 'kind', 'type': 'STRING', 'mode': 'NULLABLE'},
+          {'description': '', 'name': 'profileId', 'type': 'STRING', 'mode': 'NULLABLE'},
+          {'description': '', 'name': 'subAccountId', 'type': 'STRING', 'mode': 'NULLABLE'},
+          {'description': '', 'name': 'subAccountName', 'type': 'STRING', 'mode': 'NULLABLE'},
+          {'description': '', 'name': 'userName', 'type': 'STRING', 'mode': 'NULLABLE' }
+        ]
+    )

@@ -235,6 +235,9 @@ class TextAI():
     try:
       text = self.safely_generate_text(prompt, parts, **kwargs)
       return dirtyjson.loads(RE_DICT.search(text).group(0))
+    except dirtyjson.error.Error:
+      print('Parse JSON Error:', text)
+      raise
     except AttributeError as e:
       raise AttributeError(f'No dict found:\n {text}') from e
     except json.JSONDecodeError:
@@ -251,6 +254,9 @@ class TextAI():
     try:
       text = self.safely_generate_text(prompt, parts, **kwargs)
       return dirtyjson.loads(RE_LIST.search(text).group(0))
+    except dirtyjson.error.Error:
+      print('Parse JSON Error:', text)
+      raise
     except AttributeError as e:
       raise AttributeError(f'No list found:\n {text}') from e
     except json.JSONDecodeError:

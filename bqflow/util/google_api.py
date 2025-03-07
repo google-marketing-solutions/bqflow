@@ -638,6 +638,26 @@ class API_Sheets(API):
     })
 
 
+class API_Slides(API):
+  """Slides helper for Google API.  Defines agreed upon version.
+  """
+
+  def __init__(
+      self,
+      config: Configuration,
+      auth: str,
+      iterate: bool = False
+  ) -> None:
+    super().__init__(
+        config=config,
+        api={
+            'api': 'slides',
+            'version': 'v1',
+            'auth': auth,
+            'iterate': iterate
+        })
+
+
 class API_DCM(API):
   """DCM helper for Google API.  Defines agreed upon version.
   """

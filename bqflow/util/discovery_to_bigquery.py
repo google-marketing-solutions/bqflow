@@ -68,7 +68,6 @@ def preferred_version(
     api_name,
     key or ''
   )
-  print('DISCOVERY FETCH:', api_url)
   api_info = json.load(request.urlopen(api_url))
   return api_info['items'][0]['version']
 
@@ -113,7 +112,6 @@ class Discovery_To_BigQuery():
       self.key,
       self.labels
     )
-    print('DISCOVERY FETCH:', api_url)
     self.api_document = json.load(request.urlopen(api_url))
 
   def to_type(
@@ -212,6 +210,19 @@ class Discovery_To_BigQuery():
           })
         parents[value['$ref']] -= 1
 
+      # struct embedded
+      elif 'properties' in value:
+        bigquery_schema.append({
+            'name': key,
+            'type': 'RECORD',
+            'mode': 'NULLABLE',
+            'fields': self.to_schema(
+                value['properties'],
+                parents
+            )
+        })
+
+      # array embedded
       elif 'items' in value:
 
         # array with ref
